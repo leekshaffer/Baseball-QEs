@@ -82,7 +82,7 @@ colnames(Sav.Shades) <- c("Season","Name","Team_ID","Batter",
                           "PA_NoShade","PA_NoShade_Percent","wOBA_NoShade")
 
 ### Combining overall player data with shift information:
-Sav.2016_22 <- B.250 %>% dplyr::filter(year %in% 2016:2022) %>%
+Sav.2016_22 <- B.250 %>% dplyr::filter(Season %in% 2016:2022) %>%
   left_join(Sav.Shifts, by=c("Season","Name"))
 
 ### Save data:
