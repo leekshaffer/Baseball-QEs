@@ -61,25 +61,41 @@ colnames(B.250) <- c("Name","Player_ID","Season",
 Sav.Shifts <- NULL
 for (year in 2016:2022) {
   Sav.Shifts <- Sav.Shifts %>%
-    bind_rows(read_csv(file=paste0("data/savant-pos-",if_else(year==2020,"100","250"),
+    bind_rows(read_csv(file=paste0("data/savant-pos-",if_else(year==2020,"25","50"),
                                    "PA-",year,".csv"),
                        col_names=TRUE))
 }
 colnames(Sav.Shifts) <- c("Season","Name","Team_ID","Batter",
-                          "PA","PA_Shifts","PA_Shift_Percent","wOBA_Shift",
+                          "PA","PA_Shift","PA_Shift_Percent","wOBA_Shift",
                           "PA_NoShift","PA_NoShift_Percent","wOBA_NoShift")
+Sav.Shifts<- Sav.Shifts %>% group_by(Season,Name) %>%
+  dplyr::summarize(PA_total=sum(PA), PA_Shift_total=sum(PA_Shift),
+                PA_NoShift_total=sum(PA_NoShift),
+                wOBA_Shift_total=sum(wOBA_Shift*PA_Shift)/sum(PA_Shift),
+                wOBA_NoShift_total=sum(wOBA_NoShift*PA_NoShift)/sum(PA_NoShift)) %>%
+  dplyr::rename(PA=PA_total, PA_Shift=PA_Shift_total, PA_NoShift=PA_NoShift_total,
+                wOBA_Shift=wOBA_Shift_total, wOBA_NoShift=wOBA_NoShift_total) %>%
+  dplyr::mutate(PA_Shift_Percent=PA_Shift/PA*100, PA_NoShift_Percent=PA_NoShift/PA*100)
 
 ### Player shade rates, 2023--:
 Sav.Shades <- NULL
 for (year in 2023:2024) {
   Sav.Shades <- Sav.Shades %>%
-    bind_rows(read_csv(file=paste0("data/savant-pos-",if_else(year==2020,"100","250"),
+    bind_rows(read_csv(file=paste0("data/savant-pos-",if_else(year==2020,"25","50"),
                                    "PA-",year,".csv"),
                        col_names=TRUE))
 }
 colnames(Sav.Shades) <- c("Season","Name","Team_ID","Batter",
-                          "PA","PA_Shades","PA_Shade_Percent","wOBA_Shade",
+                          "PA","PA_Shade","PA_Shade_Percent","wOBA_Shade",
                           "PA_NoShade","PA_NoShade_Percent","wOBA_NoShade")
+Sav.Shades <- Sav.Shades %>% group_by(Season,Name) %>%
+  dplyr::summarize(PA_total=sum(PA), PA_Shade_total=sum(PA_Shade),
+                PA_NoShade_total=sum(PA_NoShade),
+                wOBA_Shade_total=sum(wOBA_Shade*PA_Shade)/sum(PA_Shade),
+                wOBA_NoShade_total=sum(wOBA_NoShade*PA_NoShade)/sum(PA_NoShade)) %>%
+  dplyr::rename(PA=PA_total, PA_Shade=PA_Shade_total, PA_NoShade=PA_NoShade_total,
+                wOBA_Shade=wOBA_Shade_total, wOBA_NoShade=wOBA_NoShade_total) %>%
+  dplyr::mutate(PA_Shade_Percent=PA_Shade/PA*100, PA_NoShade_Percent=PA_NoShade/PA*100)
 
 ### Combining overall player data with shift information:
 Sav.2016_22 <- B.250 %>% dplyr::filter(Season %in% 2016:2022) %>%
