@@ -56,6 +56,11 @@ colnames(B.250) <- c("Name","Player_ID","Season",
                      "AB","PA","H","1B","2B","3B","HR","K percent","BB percent",
                      "AVG","SLG","OBP","OPS","BABIP","wOBA","xwOBA",
                      "Pull percent","Cent percent", "Oppo percent","batted ball")
+### Drop Jr./Sr./III/II
+B.250$Name_Match <- sub(" Jr.", "", B.250$Name)
+B.250$Name_Match <- sub(" Sr.", "", B.250$Name_Match)
+B.250$Name_Match <- sub(" III", "", B.250$Name_Match)
+B.250$Name_Match <- sub(" II", "", B.250$Name_Match)
 
 ### Player shift rates, pre-2023:
 Sav.Shifts <- NULL
@@ -76,6 +81,11 @@ Sav.Shifts<- Sav.Shifts %>% group_by(Season,Name) %>%
   dplyr::rename(PA=PA_total, PA_Shift=PA_Shift_total, PA_NoShift=PA_NoShift_total,
                 wOBA_Shift=wOBA_Shift_total, wOBA_NoShift=wOBA_NoShift_total) %>%
   dplyr::mutate(PA_Shift_Percent=PA_Shift/PA*100, PA_NoShift_Percent=PA_NoShift/PA*100)
+### Drop Jr./Sr./III/II
+Sav.Shifts$Name_Match <- sub(" Jr.", "", Sav.Shifts$Name)
+Sav.Shifts$Name_Match <- sub(" Sr.", "", Sav.Shifts$Name_Match)
+Sav.Shifts$Name_Match <- sub(" III", "", Sav.Shifts$Name_Match)
+Sav.Shifts$Name_Match <- sub(" II", "", Sav.Shifts$Name_Match)
 
 ### Player shade rates, 2023--:
 Sav.Shades <- NULL
@@ -96,10 +106,15 @@ Sav.Shades <- Sav.Shades %>% group_by(Season,Name) %>%
   dplyr::rename(PA=PA_total, PA_Shade=PA_Shade_total, PA_NoShade=PA_NoShade_total,
                 wOBA_Shade=wOBA_Shade_total, wOBA_NoShade=wOBA_NoShade_total) %>%
   dplyr::mutate(PA_Shade_Percent=PA_Shade/PA*100, PA_NoShade_Percent=PA_NoShade/PA*100)
+### Drop Jr./Sr./III/II
+Sav.Shades$Name_Match <- sub(" Jr.", "", Sav.Shades$Name)
+Sav.Shades$Name_Match <- sub(" Sr.", "", Sav.Shades$Name_Match)
+Sav.Shades$Name_Match <- sub(" III", "", Sav.Shades$Name_Match)
+Sav.Shades$Name_Match <- sub(" II", "", Sav.Shades$Name_Match)
 
 ### Combining overall player data with shift information:
 Sav.2016_22 <- B.250 %>% dplyr::filter(Season %in% 2016:2022) %>%
-  left_join(Sav.Shifts, by=c("Season","Name"))
+  left_join(Sav.Shifts %>% dplyr::select(!Name), by=c("Season","Name_Match"))
 
 ### Save data:
 save(list=c("B.250","Sav.Shades","Sav.2016_22"),
