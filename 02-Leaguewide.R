@@ -23,7 +23,7 @@ for (val in BStats) {
     labs(title=paste0("Trend in ",val," by batter handedness, bases empty, 2015",
                       "\U2013","2023"),
          y=val)
-  ggsave(filename = paste0("figs/trend-plot-",val,".png"),
+  ggsave(filename = paste0("figs/Trends/trend-plot-",val,".png"),
          plot=plot_trend)
 }
 
