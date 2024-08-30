@@ -129,5 +129,5 @@ Sav.Full <- B.250 %>% dplyr::filter(Season %in% 2016:2024) %>%
   left_join(Sav.Shifts %>% dplyr::select(!Name), by=c("Season","Name_Match"))
 
 ### Save data:
-save(list=c("B.250","Sav.Full"),
+save(list=c("B.250","Sav.Full","Sav.Shifts"),
      file="int/Sav_data.Rda")
