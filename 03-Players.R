@@ -273,7 +273,7 @@ for (ID in Player_interv$Player_ID) {
   MSPE <- c(MSPE, Ratio=MSPE["Post"]/MSPE["Pre"])
   
   save(list=c("MajorWts","BalTbl","SCs","MSPE"),
-       file=paste0("int/Player-SC-",Disp_name,".Rda"))
+       file=paste0("res/Player-SC-",Disp_name,".Rda"))
   
   WtPlot <- synth_player %>% plot_weights() + theme_bw()
   TrendPlot <- synth_player %>% plot_trends()
