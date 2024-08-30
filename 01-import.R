@@ -95,6 +95,9 @@ Sav.Shifts$Name_Match <- sub(" Jr.", "", Sav.Shifts$Name)
 Sav.Shifts$Name_Match <- sub(" Sr.", "", Sav.Shifts$Name_Match)
 Sav.Shifts$Name_Match <- sub(" III", "", Sav.Shifts$Name_Match)
 Sav.Shifts$Name_Match <- sub(" II", "", Sav.Shifts$Name_Match)
+### Specific Name Fixes:
+Sav.Shifts[Sav.Shifts$Name=="García, Leury","Name_Match"] <- "Garcia, Leury"
+Sav.Shifts[Sav.Shifts$Name=="Alvarez, Pedro","Name_Match"] <- "Álvarez, Pedro"
 
 ### Player shade rates, 2023--:
 # Sav.Shades <- NULL
