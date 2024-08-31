@@ -219,7 +219,7 @@ for (ID in Player_interv$Player_ID) {
                         unit=Name_Match,
                         time=Season,
                         i_unit=Row$Name_Match,
-                        i_time=2023,
+                        i_time=Interv,
                         generate_placebos=F) %>%
       generate_predictor(time_window=2021,
                          val2021=get(statval),
@@ -267,7 +267,7 @@ for (ID in Player_interv$Player_ID) {
       }
     }
     synth_player <- synth_player %>%
-      generate_weights(optimization_window=as.numeric(paste0("20",c(Seasons_check,S_cols_all)))[as.numeric(paste0("20",c(Seasons_check,S_cols_all))) < 2023],
+      generate_weights(optimization_window=as.numeric(paste0("20",c(Seasons_check,S_cols_all)))[as.numeric(paste0("20",c(Seasons_check,S_cols_all))) < Interv],
                        margin_ipop = .02,sigf_ipop = 7,bound_ipop = 6)
     for (index in 1:length(synth_player$`.meta`)) {
       synth_player$`.meta`[[index]]$outcome <- statval
@@ -346,6 +346,129 @@ MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Interventio
               names_from=Type,
               values_from=MSPE) %>%
   dplyr::mutate(Ratio=Post/Pre)
-save(list=c("Weights_Unit","Weights_Pred","BalTbl","SCs","MSPEs"),
+save(list=c("SCs_Full", "MSPEs_Full"),
      file=paste0("res/Full-SC-Results.Rda"))
+
+
+### Placebo Testing:
+SCs_Plac <- NULL
+
+for (ID in Player_ctrl$Player_ID) {
+  SCs <- NULL
   
+  ## Info on target player:
+  Row <- Player_ctrl[Player_ctrl$Player_ID==ID,]
+  Disp_name <- Row$Name_Disp
+  print(paste0("Beginning placebo test for ",Disp_name))
+  ## Find their seasons with >= 250 PA:
+  Seasons_check <- (S_cols_check)[unlist(Row[1,paste0("S_",S_cols_check)])]
+  
+  ## Get control players with at least those seasons >= 250 PA:
+  Player_donor <- Player_ctrl %>% 
+    dplyr::filter(Player_ID != ID,
+                  grepl(paste("S_",Seasons_check, sep="", collapse=".*"),Seasons_Dat))
+  N_donor <- dim(Player_donor)[1]
+  while (N_donor < 10) { ## Cut off a year if less than 10 donor units
+    Seasons_check <- Seasons_check[2:length(Seasons_check)]
+    Player_donor <- Player_ctrl %>% 
+      dplyr::filter(Player_ID != ID,
+                    grepl(paste(Seasons_check, sep="", collapse=".*"),Seasons_Dat))
+    N_donor <- dim(Player_donor)[1]
+  }
+  
+  ## Create data set for SC:
+  SC_data <- B.250 %>% 
+    dplyr::filter(Season %in% as.numeric(paste0("20",c(Seasons_check,S_cols_all)))) %>%
+    dplyr::filter(Player_ID %in% c(ID,Player_donor$Player_ID)) %>%
+    dplyr::mutate(Type=if_else(Player_ID==ID,"Target","Donor"))
+  
+  for (statval in BStats_Use) {
+    ## Set up SC:
+    synth_player <- SC_data %>%
+      synthetic_control(outcome={statval},
+                        unit=Name_Match,
+                        time=Season,
+                        i_unit=Row$Name_Match,
+                        i_time=Interv,
+                        generate_placebos=F) %>%
+      generate_predictor(time_window=2021,
+                         val2021=get(statval),
+                         PA2021=PA,
+                         H2021=H,
+                         Singles2021=`1B`,
+                         HR2021=HR,
+                         BBPerc2021=`BB percent`,
+                         KPerc2021=`K percent`) %>%
+      generate_predictor(time_window=2022,
+                         val2022=get(statval),
+                         PA2022=PA,
+                         H2022=H,
+                         Singles2022=`1B`,
+                         HR2022=HR,
+                         BBPerc2022=`BB percent`,
+                         KPerc2022=`K percent`)
+    if (!identical(Seasons_check, integer(0))) {
+      if (length(Seasons_check)==1) {
+        year <- as.numeric(paste0("20",Seasons_check))
+        synth_player <- synth_player %>%
+          generate_predictor(time_window=year,
+                             valpre2020=get(statval),
+                             PApre2020=PA,
+                             Hpre2020=H,
+                             Singlespre2020=`1B`,
+                             HRpre2020=HR,
+                             BBPercpre2020=`BB percent`,
+                             KPercpre2020=`K percent`)
+      } else {
+        years <- as.numeric(paste0("20",Seasons_check))
+        synth_player <- synth_player %>%
+          generate_predictor(time_window=years,
+                             PApre2020=mean(PA, na.rm=TRUE),
+                             Hpre2020=mean(H, na.rm=TRUE),
+                             Singlespre2020=mean(`1B`, na.rm=TRUE),
+                             HRpre2020=mean(HR, na.rm=TRUE),
+                             BBPercpre2020=mean(`BB percent`, na.rm=TRUE),
+                             KPercpre2020=mean(`K percent`, na.rm=TRUE))
+        for (year in years) {
+          synth_player <- synth_player %>%
+            generate_predictor(time_window=year,
+                               "val.{year}" := get(statval))
+        }
+      }
+    }
+    synth_player <- synth_player %>%
+      generate_weights(optimization_window=as.numeric(paste0("20",c(Seasons_check,S_cols_all)))[as.numeric(paste0("20",c(Seasons_check,S_cols_all))) < Interv],
+                       margin_ipop = .02,sigf_ipop = 7,bound_ipop = 6)
+    for (index in 1:length(synth_player$`.meta`)) {
+      synth_player$`.meta`[[index]]$outcome <- statval
+    }
+    synth_player <- synth_player %>%
+      generate_control()
+    
+    ## Pull results and save:
+    SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
+                               dplyr::mutate(Outcome=statval, 
+                                             Diff=real_y-synth_y,
+                                             Intervention=time_unit >= Interv))
+  }
+  SCs <- SCs %>% dplyr::rename(Season=time_unit,
+                               Observed=real_y,
+                               Synthetic=synth_y) %>%
+    dplyr::select(Outcome,Season,Intervention,
+                  Observed,Synthetic,Diff)
+  SCs_Plac <- SCs_Plac %>% 
+    bind_rows(SCs %>% mutate(Placebo_Name=Row$Name, Placebo_Disp=Disp_name, 
+                             Placebo_ID=ID,
+                             Placebo_Unit=TRUE))
+}
+
+MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Outcome,Intervention) %>%
+  dplyr::summarize(MSPE=mean(Diff^2)) %>%
+  ungroup() %>%
+  dplyr::mutate(Type=if_else(Intervention,"Post","Pre")) %>%
+  pivot_wider(id_cols=-c("Intervention"),
+              names_from=Type,
+              values_from=MSPE) %>%
+  dplyr::mutate(Ratio=Post/Pre)
+save(list=c("SCs_Plac", "MSPEs_Plac"),
+     file=paste0("res/Full-SC-Placebo-Results.Rda"))
