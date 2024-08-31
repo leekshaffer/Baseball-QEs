@@ -135,9 +135,11 @@ for (statval in BStats) {
 
 ## Run analyses for all intervention players:
 S_cols_check <- 15:19 ## Make sure these are in order of the variables
+SCs_Full <- NULL
 for (ID in Player_interv$Player_ID) {
     ## Reset data sets:
-    MajorWts <- NULL
+    Weights_Unit <- NULL
+    Weights_Pred <- NULL
     BalTbl <- NULL
     SCs <- NULL
     MSPE <- NULL
@@ -274,20 +276,53 @@ for (ID in Player_interv$Player_ID) {
            plot=DiffPlot)
     
     ## Pull results and save:
-    ### NOTE: check how this save works
-    ### NOTE: also add overall MSPE and SCs result with all target players & outcomes
-    MajorWts[[statval]] <- synth_player %>% grab_unit_weights() %>% 
-      dplyr::filter(weight > 0.001) %>% dplyr::arrange(desc(weight)) 
+    if (is.null(Weights_Unit)) {
+      Weights_Unit <- synth_player %>% grab_unit_weights() %>% 
+        dplyr::rename("{statval}_weight" := weight)
+      Weights_Pred <- synth_player %>% grab_predictor_weights() %>%
+        dplyr::rename("{statval}_weight" := weight)
+    } else {
+      Weights_Unit <- Weights_Unit %>%
+        left_join(synth_player %>% grab_unit_weights() %>% 
+                    dplyr::rename("{statval}_weight" := weight))
+      Weights_Pred <- Weights_Pred %>%
+        left_join(synth_player %>% grab_predictor_weights() %>%
+                    dplyr::rename("{statval}_weight" := weight))
+    }
     BalTbl[[statval]] <- synth_player %>% grab_balance_table()
-    SCs[[statval]] <- synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
-      mutate(diff=real_y-synth_y)
-    MSPE <- MSPE %>% add_row(
-      Outcome=statval,
-      Pre=mean((SCs %>% dplyr::filter(time_unit < 2023) %>% pull(diff))^2),
-      Post=mean((SCs %>% dplyr::filter(time_unit >= 2023) %>% pull(diff))^2))
+    SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
+                               dplyr::mutate(Outcome=statval, 
+                                             Diff=real_y-synth_y,
+                                             Intervention=time_unit >= Interv))
   }
-    MSPE <- MSPE %>% dplyr::mutate(Ratio=Post/Pre)
-    save(list=c("MajorWts","BalTbl","SCs","MSPE"),
+    SCs <- SCs %>% dplyr::rename(Season=time_unit,
+                                 Observed=real_y,
+                                 Synthetic=synth_y) %>%
+      dplyr::select(Outcome,Season,Intervention,
+                    Observed,Synthetic,Diff)
+    MSPEs <- SCs %>% group_by(Outcome,Intervention) %>%
+      dplyr::summarize(MSPE=mean(Diff^2)) %>%
+      ungroup() %>%
+      dplyr::mutate(Type=if_else(Intervention,"Post","Pre")) %>%
+      pivot_wider(id_cols=Outcome,
+                  names_from=Type,
+                  values_from=MSPE) %>%
+      dplyr::mutate(Ratio=Post/Pre)
+    save(list=c("Weights_Unit","Weights_Pred","BalTbl","SCs","MSPEs"),
          file=paste0("res/Player-SC-",Disp_name,".Rda"))
+    SCs_Full <- SCs_Full %>% 
+      bind_rows(SCs %>% mutate(Name=Row$Name, Name_Disp=Disp_name, Player_ID=ID))
 }
+SCs_Full <- SCs_Full %>% 
+       dplyr::select(Name,Player_ID,Outcome,Season,Intervention,Observed,Synthetic,Diff,Name_Disp)
+MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Intervention) %>%
+  dplyr::summarize(MSPE=mean(Diff^2)) %>%
+  ungroup() %>%
+  dplyr::mutate(Type=if_else(Intervention,"Post","Pre")) %>%
+  pivot_wider(id_cols=-c("Intervention"),
+              names_from=Type,
+              values_from=MSPE) %>%
+  dplyr::mutate(Ratio=Post/Pre)
+save(list=c("Weights_Unit","Weights_Pred","BalTbl","SCs","MSPEs"),
+     file=paste0("res/Full-SC-Results.Rda"))
   
