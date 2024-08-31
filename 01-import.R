@@ -99,35 +99,6 @@ Sav.Shifts$Name_Match <- sub(" II", "", Sav.Shifts$Name_Match)
 Sav.Shifts[Sav.Shifts$Name=="García, Leury","Name_Match"] <- "Garcia, Leury"
 Sav.Shifts[Sav.Shifts$Name=="Alvarez, Pedro","Name_Match"] <- "Álvarez, Pedro"
 
-### Player shade rates, 2023--:
-# Sav.Shades <- NULL
-# for (year in 2023:2024) {
-#   Sav.Shades <- Sav.Shades %>%
-#     bind_rows(read_csv(file=paste0("data/savant-pos-",if_else(year==2020,"25","50"),
-#                                    "PA-",year,".csv"),
-#                        col_names=TRUE))
-# }
-# colnames(Sav.Shades) <- c("Season","Name","Team_ID","Batter",
-#                           "PA","PA_Shade","PA_Shade_Percent","wOBA_Shade",
-#                           "PA_NoShade","PA_NoShade_Percent","wOBA_NoShade")
-# Sav.Shades <- Sav.Shades %>% group_by(Season,Name) %>%
-#   dplyr::summarize(PA_total=sum(PA), PA_Shade_total=sum(PA_Shade),
-#                 PA_NoShade_total=sum(PA_NoShade),
-#                 wOBA_Shade_total=sum(wOBA_Shade*PA_Shade)/sum(PA_Shade),
-#                 wOBA_NoShade_total=sum(wOBA_NoShade*PA_NoShade)/sum(PA_NoShade)) %>%
-#   dplyr::rename(PA=PA_total, PA_Shade=PA_Shade_total, PA_NoShade=PA_NoShade_total,
-#                 wOBA_Shade=wOBA_Shade_total, wOBA_NoShade=wOBA_NoShade_total) %>%
-#   dplyr::mutate(PA_Shade_Percent=PA_Shade/PA*100, PA_NoShade_Percent=PA_NoShade/PA*100)
-# ### Drop Jr./Sr./III/II
-# Sav.Shades$Name_Match <- sub(" Jr.", "", Sav.Shades$Name)
-# Sav.Shades$Name_Match <- sub(" Sr.", "", Sav.Shades$Name_Match)
-# Sav.Shades$Name_Match <- sub(" III", "", Sav.Shades$Name_Match)
-# Sav.Shades$Name_Match <- sub(" II", "", Sav.Shades$Name_Match)
-
-### Combining overall player data with shift information:
-Sav.Full <- B.250 %>% dplyr::filter(Season %in% 2016:2024) %>%
-  left_join(Sav.Shifts %>% dplyr::select(!Name), by=c("Season","Name_Match"))
-
 ### Save data:
-save(list=c("B.250","Sav.Full","Sav.Shifts"),
+save(list=c("B.250","Sav.Shifts"),
      file="int/Sav_data.Rda")

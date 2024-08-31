@@ -46,7 +46,7 @@ save(TwoByTwo,
 ## Event study analysis:
 FullES <- FG.dat.empty %>% dplyr::select(Season,Batter,all_of(BStats)) %>%
   group_by(Batter) %>% arrange(Batter,Season) %>%
-  mutate(across(.cols=BStats,
+  mutate(across(.cols=all_of(BStats),
          .fns=~lag(.x),
          .names="{.col}_lag"))
 for (val in BStats) {
@@ -78,7 +78,7 @@ for (val in BStats) {
     labs(y=paste0("Change in ",val," from previous year, LHB","\U2013","RHB"),
          title=paste0("Event study analysis for ",val,
                       ", bases empty, 1-year difference, LHB","\U2013","RHB"))
-  ggsave(filename = paste0("figs/ES-plot-",val,".png"),
+  ggsave(filename = paste0("figs/Event Studies/ES-plot-",val,".png"),
          plot=plot_ES)
 }
   
