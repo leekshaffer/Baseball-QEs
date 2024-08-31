@@ -10,7 +10,7 @@ require(tidyverse)
 require(tidysynth)
 
 ## Hitting stats to consider:
-BStats <- c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA")
+BStats <- tibble(stat=c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA"))
 
 ## Import Savant data:
 load(file="int/Sav_data.Rda")
@@ -73,7 +73,7 @@ B.250_pool <- B.250 %>%
   
 Player_pool_avg <- B.250_pool %>%
   group_by(Shift_Cat_2022,Season) %>%
-  dplyr::summarize(across(all_of(BStats), mean, .names="{col}_Mean")) %>%
+  dplyr::summarize(across(all_of(BStats$stat), mean, .names="{col}_Mean")) %>%
   ungroup()
 
 ## Save player pool and shift-categorized result data:
@@ -83,7 +83,11 @@ save(list=c("Player_pool", "B.250_pool"),
 save(Player_pool_avg, 
      file="tbls/Shift_Category_Averages.Rda")
 
-for (statval in BStats) {
+## Get max and min for consisten plot y-axes:
+BStats$min <- sapply(BStats$stat, function(x) min(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
+BStats$max <- sapply(BStats$stat, function(x) max(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
+
+for (statval in BStats$stat) {
   plot_Spag <- ggplot(data=B.250_pool %>% dplyr::filter(Shift_Cat_2022 != "Medium"),
                       mapping=aes(x=Season, y=get(statval),
                                   group=Player_ID,
@@ -93,6 +97,8 @@ for (statval in BStats) {
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
+    scale_y_continuous(name=paste0("Average player ",statval),
+                       limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     scale_color_brewer(name="Shift Rate, 2022",
                        type="qual", palette="Dark2",
@@ -103,8 +109,9 @@ for (statval in BStats) {
                        breaks=c("Low","High"),
                        labels=c("\U2264 20%","\U2265 80%")) +
     theme_bw() +
-    labs(title=paste0(statval," by player, min. 250 PA in each of 2021","\U2013","2023 and listed season"),
-         y=paste0("Average player ",statval))
+    theme(legend.position="bottom") +
+    coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+    labs(title=paste0(statval," by player, min. 250 PA in each of 2021","\U2013","2023 and listed season"))
   ggsave(filename = paste0("figs/Shift Categories/Spag-plot-",statval,".png"),
          plot=plot_Spag)
     
@@ -126,16 +133,25 @@ for (statval in BStats) {
                        breaks=c("Low","Medium","High"),
                        labels=c("\U2264 20%",paste0("20","\U2013","80%"),"\U2265 80%")) +
     theme_bw() +
+    theme(legend.position="bottom") +
     labs(title=paste0("Average ",statval," among players with min. 250 PA in each of 2021","\U2013",
                       "2023 and listed season"),
          y=paste0("Average player ",statval))
-  ggsave(filename = paste0("figs/Shift Categories/CatAvg-plot-",statval,".png"),
+  plot_CatAvg_fixedscale <- plot_CatAvg +
+    scale_y_continuous(name=paste0("Average player ",statval),
+                       limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+    coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
+  ggsave(filename = paste0("figs/Shift Categories/CatAvg-free-plot-",statval,".png"),
          plot=plot_CatAvg)
+  ggsave(filename = paste0("figs/Shift Categories/CatAvg-fixed-plot-",statval,".png"),
+         plot=plot_CatAvg_fixedscale)
 }
 
 ## Run analyses for all intervention players:
 S_cols_check <- 15:19 ## Make sure these are in order of the variables
 SCs_Full <- NULL
+### Stats to use and the graph parameters:
+BStats_Use <- c("wOBA","OBP","OPS")
 for (ID in Player_interv$Player_ID) {
     ## Reset data sets:
     Weights_Unit <- NULL
@@ -168,7 +184,7 @@ for (ID in Player_interv$Player_ID) {
       dplyr::filter(Player_ID %in% c(ID,Player_donor$Player_ID)) %>%
       dplyr::mutate(Type=if_else(Player_ID==ID,"Target","Donor"))
     
-  for (statval in c("wOBA","OBP","OPS")) {
+  for (statval in BStats_Use) {
     ## Spaghetti Plot for Target Player:
     plot_player_spa <- ggplot(SC_data, mapping=aes(x=Season, y=get(statval), group=Player_ID, 
                                                     color=Type, alpha=Type)) +
@@ -176,21 +192,24 @@ for (ID in Player_interv$Player_ID) {
       scale_x_continuous(name="Season",
                          breaks=2015:2023,
                          minor_breaks=NULL) +
+      scale_y_continuous(name=statval,
+                         limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
       geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
       scale_color_brewer(name="Player Type",
                          type="qual", palette="Dark2",
-                         breaks=c("Donor","Target"),
-                         labels=c("Control Players (2022 Shift Rate <20%)",
-                                  paste0("Target Player: ",Disp_name))) +
+                         direction=-1,
+                         breaks=c("Target","Donor"),
+                         labels=c(paste0("Target Player: ",Disp_name),
+                                  "Control Players (2022 Shift Rate \U2264 20%)")) +
       scale_alpha_manual(name="Player Type",
-                         values=c(0.5,1),
-                         breaks=c("Donor","Target"),
-                         labels=c("Control Players (2022 Shift Rate <20%)",
-                                  paste0("Target Player: ",Disp_name))) +
+                         values=c(1,0.5),
+                         breaks=c("Target","Donor"),
+                         labels=c(paste0("Target Player: ",Disp_name),
+                                  "Control Players (2022 Shift Rate \U2264 20%)")) +
       theme_bw() + theme(legend.position="bottom") +
+      coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
       labs(title=paste0(statval," by player, ","\U2265",
-                        "250 PA each season, 2017","\U2013","2022"),
-           y=statval)
+                        "250 PA each season, 2017","\U2013","2022"))
     ggsave(filename = paste0("figs/Players/",Disp_name,"/Spaghetti-",statval,".png"),
            plot=plot_player_spa)
     
@@ -259,8 +278,12 @@ for (ID in Player_interv$Player_ID) {
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
     TrendPlot <- synth_player %>% plot_trends()
     TrendPlot$layers[[1]] <- NULL
-    TrendPlot <- TrendPlot + geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") + 
-      theme_bw()
+    TrendPlot <- TrendPlot + 
+      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") + 
+      theme_bw() + theme(legend.position="bottom") +
+      scale_y_continuous(name=statval,
+                         limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+      coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
     DiffPlot <- synth_player %>% plot_differences()
     DiffPlot$layers[[2]] <- NULL
     DiffPlot$layers[[1]] <- NULL
