@@ -4,6 +4,7 @@
 
 require(tidyverse)
 load(file="int/FG_data.Rda")
+Interv <- 2023
 
 ## Hitting stats to consider:
 BStats <- c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA")
@@ -19,7 +20,7 @@ for (val in BStats) {
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
-    geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0("Trend in ",val," by batter handedness, bases empty, 2015",
                       "\U2013","2023"),
          y=val)
@@ -53,7 +54,7 @@ for (val in BStats) {
   FullES[paste(val,"Diff",sep="_")] <- FullES[val]-FullES[paste(val,"lag",sep="_")]
 }
 FullES <- FullES %>%
-  dplyr::mutate(Type=if_else(Season >= 2023, "Intervention", "Placebo")) %>%
+  dplyr::mutate(Type=if_else(Season >= Interv, "Intervention", "Placebo")) %>%
   dplyr::select(Season,Type,Batter,ends_with("Diff")) %>%
   pivot_wider(id_cols=c(Season,Type), names_from=Batter, values_from=ends_with("Diff"))
 for (val in BStats) {
@@ -66,7 +67,7 @@ for (val in BStats) {
   plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season != 2020 & Season != 2021 & Season != 2024), 
          mapping=aes(x=Season, y=get(paste(val,"ES",sep="_")), color=Type)) +
     geom_point(size=2) +
-    geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     geom_hline(yintercept=0, color="grey50", linetype="dashed") +
     theme_bw() +
     scale_color_brewer(name=NULL,

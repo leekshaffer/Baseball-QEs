@@ -18,6 +18,8 @@ load(file="int/Sav_data.Rda")
 ## Thresholds for high/low Shift rates:
 Cuts <- c(20,80)
 
+Interv <- 2023
+
 ## Create summary data set for players with which seasons they had >= 250PA (50 for 2020), 
 ### and their Shift Categories: 
 S_cols_full <- paste0("S_",15:24)
@@ -91,7 +93,7 @@ for (statval in BStats) {
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
-    geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     scale_color_brewer(name="Shift Rate, 2022",
                        type="qual", palette="Dark2",
                        breaks=c("Low","High"),
@@ -114,7 +116,7 @@ for (statval in BStats) {
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
-    geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     scale_color_brewer(name="Shift Rate, 2022",
                        type="qual", palette="Dark2",
                        breaks=c("Low","Medium","High"),
@@ -133,11 +135,17 @@ for (statval in BStats) {
 
 ## Run analyses for all intervention players:
 S_cols_check <- 15:19 ## Make sure these are in order of the variables
-for (statval in c("wOBA","OBP","OPS")) {
-  for (ID in Player_interv$Player_ID) {
+for (ID in Player_interv$Player_ID) {
+    ## Reset data sets:
+    MajorWts <- NULL
+    BalTbl <- NULL
+    SCs <- NULL
+    MSPE <- NULL
+  
     ## Info on target player:
     Row <- Player_interv[Player_interv$Player_ID==ID,]
     Disp_name <- Row$Name_Disp
+    print(paste0("Beginning analysis for ",Disp_name))
     ## Find their seasons with >= 250 PA:
     Seasons_check <- (S_cols_check)[unlist(Row[1,paste0("S_",S_cols_check)])]
     
@@ -158,6 +166,7 @@ for (statval in c("wOBA","OBP","OPS")) {
       dplyr::filter(Player_ID %in% c(ID,Player_donor$Player_ID)) %>%
       dplyr::mutate(Type=if_else(Player_ID==ID,"Target","Donor"))
     
+  for (statval in c("wOBA","OBP","OPS")) {
     ## Spaghetti Plot for Target Player:
     plot_player_spa <- ggplot(SC_data, mapping=aes(x=Season, y=get(statval), group=Player_ID, 
                                                     color=Type, alpha=Type)) +
@@ -165,7 +174,7 @@ for (statval in c("wOBA","OBP","OPS")) {
       scale_x_continuous(name="Season",
                          breaks=2015:2023,
                          minor_breaks=NULL) +
-      geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") +
+      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
       scale_color_brewer(name="Player Type",
                          type="qual", palette="Dark2",
                          breaks=c("Donor","Target"),
@@ -245,29 +254,16 @@ for (statval in c("wOBA","OBP","OPS")) {
     synth_player <- synth_player %>%
       generate_control()
     
-    ## Pull results and save:
-    MajorWts <- synth_player %>% grab_unit_weights() %>% 
-      dplyr::filter(weight > 0.001) %>% dplyr::arrange(desc(weight)) 
-    BalTbl <- synth_player %>% grab_balance_table()
-    SCs <- synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
-      mutate(diff=real_y-synth_y)
-    MSPE <- c(Pre=mean((SCs %>% dplyr::filter(time_unit < 2023) %>% pull(diff))^2),
-              Post=mean((SCs %>% dplyr::filter(time_unit >= 2023) %>% pull(diff))^2))
-    MSPE <- c(MSPE, Ratio=MSPE["Post"]/MSPE["Pre"])
-    
-    save(list=c("MajorWts","BalTbl","SCs","MSPE"),
-         file=paste0("res/Player-SC-",Disp_name,"-",statval,".Rda"))
-    
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
     TrendPlot <- synth_player %>% plot_trends()
     TrendPlot$layers[[1]] <- NULL
-    TrendPlot <- TrendPlot + geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") + 
+    TrendPlot <- TrendPlot + geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") + 
       theme_bw()
     DiffPlot <- synth_player %>% plot_differences()
     DiffPlot$layers[[2]] <- NULL
     DiffPlot$layers[[1]] <- NULL
     DiffPlot <- DiffPlot + geom_hline(yintercept=0, color="grey50", linetype="dashed") + 
-      geom_vline(xintercept=2022.5, color="grey50", linetype="dashed") +
+      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
       theme_bw()
     
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Weights-",statval,".png"),
@@ -276,6 +272,22 @@ for (statval in c("wOBA","OBP","OPS")) {
            plot=TrendPlot)
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Diff-",statval,".png"),
            plot=DiffPlot)
+    
+    ## Pull results and save:
+    ### NOTE: check how this save works
+    ### NOTE: also add overall MSPE and SCs result with all target players & outcomes
+    MajorWts[[statval]] <- synth_player %>% grab_unit_weights() %>% 
+      dplyr::filter(weight > 0.001) %>% dplyr::arrange(desc(weight)) 
+    BalTbl[[statval]] <- synth_player %>% grab_balance_table()
+    SCs[[statval]] <- synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
+      mutate(diff=real_y-synth_y)
+    MSPE <- MSPE %>% add_row(
+      Outcome=statval,
+      Pre=mean((SCs %>% dplyr::filter(time_unit < 2023) %>% pull(diff))^2),
+      Post=mean((SCs %>% dplyr::filter(time_unit >= 2023) %>% pull(diff))^2))
   }
+    MSPE <- MSPE %>% dplyr::mutate(Ratio=Post/Pre)
+    save(list=c("MajorWts","BalTbl","SCs","MSPE"),
+         file=paste0("res/Player-SC-",Disp_name,".Rda"))
 }
   
