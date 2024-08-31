@@ -1,6 +1,5 @@
 ## 01-import.R
-## Created: August 16, 2024
-## Author: Lee Kennedy-Shaffer, PhD
+## Importing, cleaning, and preparing Baseball Savant and FanGraphs data
 
 require(tidyverse)
 

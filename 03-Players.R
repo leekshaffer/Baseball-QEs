@@ -1,6 +1,10 @@
 ## 03-Players.R
-## Created: August 29, 2024
-## Author: Lee Kennedy-Shaffer, PhD
+## Analyzing batting stats for high vs. low shifted players
+## Using players with at least 250 PA in each of 2021--2023
+## and plotted seasons
+## All analyses exclude 2020 and 2024
+## SC analyses for each target player use as a donor pool
+## players with min. 250 PA in all seasons in which target player had min. 250 PA
 
 require(tidyverse)
 require(tidysynth)
@@ -252,7 +256,7 @@ for (statval in c("wOBA","OBP","OPS")) {
     MSPE <- c(MSPE, Ratio=MSPE["Post"]/MSPE["Pre"])
     
     save(list=c("MajorWts","BalTbl","SCs","MSPE"),
-         file=paste0("res/Player-SC-",Disp_name,".Rda"))
+         file=paste0("res/Player-SC-",Disp_name,"-",statval,".Rda"))
     
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
     TrendPlot <- synth_player %>% plot_trends()

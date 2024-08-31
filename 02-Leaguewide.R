@@ -1,6 +1,6 @@
 ## 02-leaguewide.R
-## Created: August 29, 2024
-## Author: Lee Kennedy-Shaffer, PhD
+## Analysis of batting stats by handedness for bases-empty situations
+## Using FanGraphs data
 
 require(tidyverse)
 load(file="int/FG_data.Rda")
