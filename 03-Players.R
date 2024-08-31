@@ -332,7 +332,7 @@ for (ID in Player_interv$Player_ID) {
                   values_from=MSPE) %>%
       dplyr::mutate(Ratio=Post/Pre)
     save(list=c("Weights_Unit","Weights_Pred","BalTbl","SCs","MSPEs"),
-         file=paste0("res/Player-SC-",Disp_name,".Rda"))
+         file=paste0("res/Players/Player-SC-",Disp_name,".Rda"))
     SCs_Full <- SCs_Full %>% 
       bind_rows(SCs %>% mutate(Name=Row$Name, Name_Disp=Disp_name, Player_ID=ID))
 }
