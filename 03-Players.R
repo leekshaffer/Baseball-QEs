@@ -346,9 +346,6 @@ MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Interventio
               names_from=Type,
               values_from=MSPE) %>%
   dplyr::mutate(Ratio=Post/Pre)
-save(list=c("SCs_Full", "MSPEs_Full"),
-     file=paste0("res/Full-SC-Results.Rda"))
-
 
 ### Placebo Testing:
 SCs_Plac <- NULL
@@ -470,5 +467,78 @@ MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Outcome
               names_from=Type,
               values_from=MSPE) %>%
   dplyr::mutate(Ratio=Post/Pre)
-save(list=c("SCs_Plac", "MSPEs_Plac"),
-     file=paste0("res/Full-SC-Placebo-Results.Rda"))
+
+SCs_Results <- SCs_Full %>% dplyr::mutate(Placebo_Unit=FALSE) %>%
+  bind_rows(SCs_Plac %>% dplyr::rename(Name=Placebo_Name, Player_ID=Placebo_ID, Name_Disp=Placebo_Disp))
+
+for (statval in BStats_Use) {
+  plot_SC <- ggplot(data=SCs_Results %>% dplyr::filter(Outcome==statval),
+                     mapping=aes(x=Season, y=Diff, group=Player_ID,
+                                 color=Placebo_Unit, alpha=Placebo_Unit)) +
+    geom_line() +
+    scale_x_continuous(name="Season",
+                       breaks=2015:2023,
+                       minor_breaks=NULL) +
+    scale_y_continuous(name="Difference, Synthetic - Observed") +
+                       # limits=c(-0.25, 0.25)) +
+    scale_color_brewer(name="",
+                       type="qual", palette="Dark2",
+                       direction=-1,
+                       breaks=c(FALSE,TRUE),
+                       labels=c("Intervention","Placebo")) +
+    scale_alpha_manual(name="",
+                       breaks=c(FALSE,TRUE),
+                       labels=c("Intervention","Placebo"),
+                       values=c(1,0.5)) +
+    geom_vline(xintercept=Interv-0.5,
+               color="grey50", linetype="dashed") +
+    theme_bw() + theme(legend.position="bottom") +
+    # coord_cartesian(ylim=c(-0.25, 0.25)) +
+    labs(title=paste0("Difference, Synthetic - Observed, for ",statval," by player, ","\U2265",
+                      "250 PA each season, 2017","\U2013","2023"))
+  ggsave(filename=paste0("figs/SC-plot-",statval,".png"),
+         plot=plot_SC)
+}
+
+MSPEs_PRes <- MSPEs_Plac %>% 
+  left_join(SCs_Plac %>% dplyr::filter(Intervention) %>% 
+              dplyr::select(Placebo_ID,Outcome,Season,Diff) %>%
+              pivot_wider(values_from=Diff, names_from=Season,
+                          names_prefix="Diff_"),
+            by=c("Placebo_ID","Outcome"))
+MSPEs_Res <- MSPEs_Full %>% 
+  left_join(SCs_Full %>% dplyr::filter(Intervention) %>% 
+              dplyr::select(Player_ID,Outcome,Season,Diff) %>%
+              pivot_wider(values_from=Diff, names_from=Season,
+                          names_prefix="Diff_"),
+            by=c("Player_ID","Outcome"))
+
+PVals <- function(row,PlacData,ColName) {
+  outcome <- row["Outcome"]
+  Obs_Ratio <- as.numeric(row["Ratio"])
+  Value <- abs(as.numeric(row[ColName]))
+  dat <- PlacData %>% dplyr::filter(Outcome==outcome)
+  return(c(PVal=mean(c(unlist(abs(dat[,ColName])),Value) >= Value),
+           PVal.ex20=mean(c(unlist(abs(dat[dat$Ratio <= 20*Obs_Ratio,ColName])),Value) >= Value),
+           PVal.ex5=mean(c(unlist(abs(dat[dat$Ratio <= 5*Obs_Ratio,ColName])),Value) >= Value),
+           PVal.ex2=mean(c(unlist(abs(dat[dat$Ratio <= 2*Obs_Ratio,ColName])),Value) >= Value)))
+}
+
+psig <- 0.05
+
+MSPEs_Results <- MSPEs_Res %>%
+  bind_cols(t(apply(MSPEs_Res, 1,
+                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_2023")))) %>%
+  mutate(Sig = PVal < psig,
+         Sig.ex20 = PVal.ex20 < psig,
+         Sig.ex5 = PVal.ex5 < psig,
+         Sig.ex2 = PVal.ex2 < psig)
+
+MSPEs_Signif <- MSPEs_Results %>% group_by(Outcome) %>%
+  dplyr::summarize(across(starts_with("Sig"),
+                          .fns=mean))
+
+save(list=c("SCs_Full", "MSPEs_Full",
+            "SCs_Plac", "MSPEs_Plac",
+            "SCs_Results","MSPEs_Results","MSPEs_Signif"),
+     file="res/SC-Results-Complete.Rda")
