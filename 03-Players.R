@@ -515,13 +515,15 @@ MSPEs_Res <- MSPEs_Full %>%
 
 PVals <- function(row,PlacData,ColName) {
   outcome <- row["Outcome"]
-  Obs_Ratio <- as.numeric(row["Ratio"])
+  Pre_MSPE <- as.numeric(row["Pre"])
   Value <- abs(as.numeric(row[ColName]))
+  Ratio_Value <- as.numeric(row["Ratio"])
   dat <- PlacData %>% dplyr::filter(Outcome==outcome)
   return(c(PVal=mean(c(unlist(abs(dat[,ColName])),Value) >= Value),
-           PVal.ex20=mean(c(unlist(abs(dat[dat$Ratio <= 20*Obs_Ratio,ColName])),Value) >= Value),
-           PVal.ex5=mean(c(unlist(abs(dat[dat$Ratio <= 5*Obs_Ratio,ColName])),Value) >= Value),
-           PVal.ex2=mean(c(unlist(abs(dat[dat$Ratio <= 2*Obs_Ratio,ColName])),Value) >= Value)))
+           PVal.ex20=mean(c(unlist(abs(dat[dat$Pre <= 20*Pre_MSPE,ColName])),Value) >= Value),
+           PVal.ex5=mean(c(unlist(abs(dat[dat$Pre <= 5*Pre_MSPE,ColName])),Value) >= Value),
+           PVal.ex2=mean(c(unlist(abs(dat[dat$Pre <= 2*Pre_MSPE,ColName])),Value) >= Value),
+           PVal.ratio=mean(c(dat$Ratio,Ratio_Value) >= Ratio_Value)))
 }
 
 psig <- 0.05
@@ -532,13 +534,12 @@ MSPEs_Results <- MSPEs_Res %>%
   mutate(Sig = PVal < psig,
          Sig.ex20 = PVal.ex20 < psig,
          Sig.ex5 = PVal.ex5 < psig,
-         Sig.ex2 = PVal.ex2 < psig)
+         Sig.ex2 = PVal.ex2 < psig,
+         Sig.ratio = PVal.ratio < psig)
 
 MSPEs_Signif <- MSPEs_Results %>% group_by(Outcome) %>%
   dplyr::summarize(across(starts_with("Sig"),
                           .fns=mean))
 
-save(list=c("SCs_Full", "MSPEs_Full",
-            "SCs_Plac", "MSPEs_Plac",
-            "SCs_Results","MSPEs_Results","MSPEs_Signif"),
+save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results","MSPEs_Signif"),
      file="res/SC-Results-Complete.Rda")
