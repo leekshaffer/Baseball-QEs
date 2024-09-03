@@ -9,14 +9,31 @@ Interv <- 2023
 ## Hitting stats to consider:
 BStats <- c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA")
 
+FG.dat.withCF <- FG.dat.empty %>% dplyr::filter(Season != 2020 & Season <= Interv) %>%
+  dplyr::select(all_of(c("Season","Batter",BStats)))
+for (year in Interv) {
+  FG.dat.withCF <- FG.dat.withCF %>%
+    bind_rows(FG.dat.withCF %>% dplyr::filter(Season < Interv, Batter=="LHB") %>% 
+                dplyr::mutate(Batter="Counterfactual LHB"),
+                bind_cols(Season=year,
+                       Batter="Counterfactual LHB",
+                       FG.dat.withCF %>% dplyr::filter(Season==year-1, Batter=="LHB") %>% dplyr::select(all_of(BStats)) + 
+                         FG.dat.withCF %>% dplyr::filter(Season==year, Batter=="RHB") %>% dplyr::select(all_of(BStats)) - 
+                         FG.dat.withCF %>% dplyr::filter(Season==year-1, Batter=="RHB") %>% dplyr::select(all_of(BStats))))
+}
+
 ## Plot trends with bases empty:
 for (val in BStats) {
-  plot_trend <- ggplot(data=FG.dat.empty %>% dplyr::filter(Season != 2020 & Season != 2024),
-         mapping=aes(x=Season, y=get(val), group=Batter, color=Batter)) +
-    geom_line() + geom_point(size=2) +
-    theme_bw() +
-    scale_color_brewer(name="Batter Handedness",
-                       type="qual", palette="Dark2") +
+  plot_trend <- ggplot(data=FG.dat.withCF %>% dplyr::filter(Season != 2020 & Season <= Interv),
+         mapping=aes(x=Season, y=get(val), group=Batter, color=Batter, linetype=Batter)) +
+    geom_line(linewidth=1.2) + geom_point(shape=17, size=2.2) +
+    theme_bw() + theme(legend.position="bottom") +
+    scale_color_manual(name="Batter Handedness",
+                       values=c("#a6611a","#92c5de","#a6611a"),
+                       breaks=c("LHB","RHB","Counterfactual LHB")) +
+    scale_linetype_manual(name="Batter Handedness",
+                          values=c("solid","dotted","dotted"),
+                          breaks=c("LHB","RHB","Counterfactual LHB")) +
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
@@ -46,6 +63,7 @@ save(TwoByTwo,
 
 ## Event study analysis:
 FullES <- FG.dat.empty %>% dplyr::select(Season,Batter,all_of(BStats)) %>%
+  dplyr::filter(Season != 2020) %>%
   group_by(Batter) %>% arrange(Batter,Season) %>%
   mutate(across(.cols=all_of(BStats),
          .fns=~lag(.x),
@@ -64,22 +82,24 @@ FullES %>% dplyr::select(Season,Type,ends_with("ES"))
 save(FullES, file="tbls/Full_ES.Rda")
 
 for (val in BStats) {
-  plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season != 2020 & Season != 2021 & Season != 2024), 
+  plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season <= Interv), 
          mapping=aes(x=Season, y=get(paste(val,"ES",sep="_")), color=Type)) +
-    geom_point(size=2) +
+    geom_point(size=2.5) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     geom_hline(yintercept=0, color="grey50", linetype="dashed") +
-    theme_bw() +
+    theme_bw() + theme(legend.position="bottom") +
     scale_color_brewer(name=NULL,
                        type="qual", palette="Dark2") +
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
-    theme(legend.position="bottom") +
     labs(y=paste0("Change in ",val," from previous year, LHB","\U2013","RHB"),
          title=paste0("Event study analysis for ",val,
                       ", bases empty, 1-year difference, LHB","\U2013","RHB"))
   ggsave(filename = paste0("figs/Event Studies/ES-plot-",val,".png"),
          plot=plot_ES)
 }
-  
+
+save(list=c("FG.dat.withCF","TwoByTwo","FullES"),
+     file="int/DID_data.Rda")
+
