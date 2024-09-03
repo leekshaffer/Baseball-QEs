@@ -83,7 +83,7 @@ save(list=c("Player_pool", "B.250_pool"),
 save(Player_pool_avg, 
      file="tbls/Shift_Category_Averages.Rda")
 
-## Get max and min for consisten plot y-axes:
+## Get max and min for consistent plot y-axes:
 BStats$min <- sapply(BStats$stat, function(x) min(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
 BStats$max <- sapply(BStats$stat, function(x) max(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
 
@@ -276,14 +276,14 @@ for (ID in Player_interv$Player_ID) {
       generate_control()
     
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
-    TrendPlot <- synth_player %>% plot_trends()
-    TrendPlot$layers[[1]] <- NULL
-    TrendPlot <- TrendPlot + 
-      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") + 
-      theme_bw() + theme(legend.position="bottom") +
-      scale_y_continuous(name=statval,
-                         limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
-      coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
+    # TrendPlot <- synth_player %>% plot_trends()
+    # TrendPlot$layers[[1]] <- NULL
+    # TrendPlot <- TrendPlot + 
+    #   geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") + 
+    #   theme_bw() + theme(legend.position="bottom") +
+    #   scale_y_continuous(name=statval,
+    #                      limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+    #   coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
     DiffPlot <- synth_player %>% plot_differences()
     DiffPlot$layers[[2]] <- NULL
     DiffPlot$layers[[1]] <- NULL
@@ -293,8 +293,6 @@ for (ID in Player_interv$Player_ID) {
     
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Weights-",statval,".png"),
            plot=WtPlot)
-    ggsave(filename=paste0("figs/Players/",Disp_name,"/Trend-",statval,".png"),
-           plot=TrendPlot)
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Diff-",statval,".png"),
            plot=DiffPlot)
     
@@ -316,13 +314,37 @@ for (ID in Player_interv$Player_ID) {
     SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
                                dplyr::mutate(Outcome=statval, 
                                              Diff=real_y-synth_y,
-                                             Intervention=time_unit >= Interv))
+                                             Intervention=time_unit >= Interv) %>% 
+                               dplyr::rename(Season=time_unit, Observed=real_y,
+                                             Synthetic=synth_y) %>%
+                               dplyr::select(Outcome,Season,Intervention,
+                                             Observed,Synthetic,Diff))
+    
+    ## Trend Plot:
+    TrendPlot <- ggplot(data=SCs %>% pivot_longer(cols=c("Observed","Synthetic","Diff"), 
+                                                  names_to="Result", values_to="Value") %>% 
+                          dplyr::filter(Outcome==statval, Result != "Diff"), 
+                        mapping=aes(x=Season, y=Value, 
+                                    group=Result, linetype=Result, color=Result)) +
+      geom_line(linewidth=1.2) + geom_point(shape=17, size=2.2) +
+      theme_bw() + theme(legend.position="bottom") +
+      scale_color_manual(name=NULL,
+                         values=c("#002d72","#ff5910"),
+                         breaks=c("Observed","Synthetic")) +
+      scale_linetype_manual(name=NULL,
+                            values=c("solid","dotted"),
+                            breaks=c("Observed","Synthetic")) +
+      scale_x_continuous(name="Season",
+                         breaks=2015:2023,
+                         minor_breaks=NULL) +
+      scale_y_continuous(name=statval,
+                         limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+      coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+      labs(title=paste0("Synthetic and Observed ",statval," for ",Disp_name))
+    ggsave(filename=paste0("figs/Players/",Disp_name,"/Trend-",statval,".png"),
+           plot=TrendPlot)
   }
-    SCs <- SCs %>% dplyr::rename(Season=time_unit,
-                                 Observed=real_y,
-                                 Synthetic=synth_y) %>%
-      dplyr::select(Outcome,Season,Intervention,
-                    Observed,Synthetic,Diff)
     MSPEs <- SCs %>% group_by(Outcome,Intervention) %>%
       dplyr::summarize(MSPE=mean(Diff^2)) %>%
       ungroup() %>%
