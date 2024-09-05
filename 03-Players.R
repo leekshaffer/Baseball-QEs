@@ -88,7 +88,8 @@ for (statval in BStats$stat) {
                       mapping=aes(x=Season, y=get(statval),
                                   group=Player_ID,
                                   alpha=Shift_Cat_2022,
-                                  color=Shift_Cat_2022)) +
+                                  color=Shift_Cat_2022,
+                                  linetype=Shift_Cat_2022)) +
     geom_line() + geom_point() +
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
@@ -98,10 +99,15 @@ for (statval in BStats$stat) {
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     scale_color_brewer(name="Shift Rate, 2022",
                        type="qual", palette="Dark2",
+                       direction=-1,
                        breaks=c("Low","High"),
                        labels=c("\U2264 20%","\U2265 80%")) +
     scale_alpha_manual(name="Shift Rate, 2022",
                        values=c(.5,1),
+                       breaks=c("Low","High"),
+                       labels=c("\U2264 20%","\U2265 80%")) +
+    scale_linetype_manual(name="Shift Rate, 2022",
+                       values=c("longdash","solid"),
                        breaks=c("Low","High"),
                        labels=c("\U2264 20%","\U2265 80%")) +
     theme_bw() +
@@ -114,7 +120,8 @@ for (statval in BStats$stat) {
   plot_CatAvg <- ggplot(data=Player_pool_avg, 
          mapping=aes(x=Season, y=get(paste0(statval,"_Mean")), 
                      group=Shift_Cat_2022, 
-                     color=Shift_Cat_2022, alpha=Shift_Cat_2022)) +
+                     color=Shift_Cat_2022, alpha=Shift_Cat_2022,
+                     linetype=Shift_Cat_2022)) +
     geom_line() + geom_point(size=2) +
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
@@ -122,10 +129,15 @@ for (statval in BStats$stat) {
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     scale_color_brewer(name="Shift Rate, 2022",
                        type="qual", palette="Dark2",
+                       direction=-1,
                        breaks=c("Low","Medium","High"),
                        labels=c("\U2264 20%",paste0("20","\U2013","80%"),"\U2265 80%")) +
     scale_alpha_manual(name="Shift Rate, 2022",
-                       values=c(1,0.5,1),
+                       values=c(0.5,0.3,1),
+                       breaks=c("Low","Medium","High"),
+                       labels=c("\U2264 20%",paste0("20","\U2013","80%"),"\U2265 80%")) +
+    scale_linetype_manual(name="Shift Rate, 2022",
+                       values=c("longdash","dotdash","solid"),
                        breaks=c("Low","Medium","High"),
                        labels=c("\U2264 20%",paste0("20","\U2013","80%"),"\U2265 80%")) +
     theme_bw() +
@@ -183,8 +195,8 @@ for (ID in Player_interv$Player_ID) {
   for (statval in BStats_Use) {
     ## Spaghetti Plot for Target Player:
     plot_player_spa <- ggplot(SC_data, mapping=aes(x=Season, y=get(statval), group=Player_ID, 
-                                                    color=Type, alpha=Type)) +
-      geom_line() + geom_point() +
+                                                    color=Type, alpha=Type, linetype=Type)) +
+      geom_line(linewidth=1.2) + geom_point() +
       scale_x_continuous(name="Season",
                          breaks=2015:2023,
                          minor_breaks=NULL) +
@@ -193,7 +205,7 @@ for (ID in Player_interv$Player_ID) {
       geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
       scale_color_brewer(name="Player Type",
                          type="qual", palette="Dark2",
-                         direction=-1,
+                         direction=1,
                          breaks=c("Target","Donor"),
                          labels=c(paste0("Target Player: ",Disp_name),
                                   "Control Players (2022 Shift Rate \U2264 20%)")) +
@@ -202,10 +214,14 @@ for (ID in Player_interv$Player_ID) {
                          breaks=c("Target","Donor"),
                          labels=c(paste0("Target Player: ",Disp_name),
                                   "Control Players (2022 Shift Rate \U2264 20%)")) +
+      scale_linetype_manual(name="Player Type",
+                         values=c("solid","longdash"),
+                         breaks=c("Target","Donor"),
+                         labels=c(paste0("Target Player: ",Disp_name),
+                                  "Control Players (2022 Shift Rate \U2264 20%)")) +
       theme_bw() + theme(legend.position="bottom") +
       coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
-      labs(title=paste0(statval," by player, ","\U2265",
-                        "250 PA each season, 2017","\U2013","2022"))
+      labs(title=paste0(statval," by player and season for ",Disp_name," and controls"))
     ggsave(filename = paste0("figs/Players/",Disp_name,"/Spaghetti-",statval,".png"),
            plot=plot_player_spa)
     
@@ -273,17 +289,8 @@ for (ID in Player_interv$Player_ID) {
       generate_control()
     
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
-    # DiffPlot <- synth_player %>% plot_differences()
-    # DiffPlot$layers[[2]] <- NULL
-    # DiffPlot$layers[[1]] <- NULL
-    # DiffPlot <- DiffPlot + geom_hline(yintercept=0, color="grey50", linetype="dashed") + 
-    #   geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
-    #   theme_bw()
-    
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Weights-",statval,".png"),
            plot=WtPlot)
-    # ggsave(filename=paste0("figs/Players/",Disp_name,"/Diff-",statval,".png"),
-    #        plot=DiffPlot)
     
     ## Pull results and save:
     if (is.null(Weights_Unit)) {
@@ -330,7 +337,7 @@ for (ID in Player_interv$Player_ID) {
                          limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
       coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
       geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
-      labs(title=paste0("Synthetic and Observed ",statval," for ",Disp_name))
+      labs(title=paste0("Synthetic and observed ",statval," for ",Disp_name))
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Trend-",statval,".png"),
            plot=TrendPlot)
   }
@@ -488,7 +495,8 @@ for (statval in BStats_Use) {
   diff_max <- max(SCs_Results %>% dplyr::filter(Outcome==statval) %>% pull(Diff), na.rm=TRUE)
   plot_SC <- ggplot(data=SCs_Results %>% dplyr::filter(Outcome==statval),
                      mapping=aes(x=Season, y=Diff, group=Player_ID,
-                                 color=Placebo_Unit, alpha=Placebo_Unit)) +
+                                 color=Placebo_Unit, alpha=Placebo_Unit,
+                                 linetype=Placebo_Unit)) +
     geom_line() +
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
@@ -505,11 +513,15 @@ for (statval in BStats_Use) {
                        breaks=c(FALSE,TRUE),
                        labels=c("Intervention","Placebo"),
                        values=c(1,0.5)) +
+    scale_linetype_manual(name="",
+                       breaks=c(FALSE,TRUE),
+                       labels=c("Intervention","Placebo"),
+                       values=c("solid","longdash")) +
     geom_vline(xintercept=Interv-0.5,
                color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
     labs(title=paste0("SCM estimates for ",statval," by player, ","\U2265",
-                      "250 PA each season, 2017","\U2013","2023"))
+                      "250 PA each season, 2015","\U2013","2023"))
   ggsave(filename=paste0("figs/SC Estimates/SC-plot-",statval,".png"),
          plot=plot_SC)
   
@@ -520,8 +532,8 @@ for (statval in BStats_Use) {
                           bind_rows(SCs_Results %>% dplyr::filter(Outcome==statval & Placebo_Unit)),
                       mapping=aes(x=Season, y=Diff, group=Player_ID,
                                   color=Placebo_Unit, alpha=Placebo_Unit,
-                                  linewidth=Placebo_Unit)) +
-      geom_line() +
+                                  linetype=Placebo_Unit)) +
+      geom_line(linewidth=1.2) +
       scale_x_continuous(name="Season",
                          breaks=2015:2023,
                          minor_breaks=NULL) +
@@ -532,15 +544,18 @@ for (statval in BStats_Use) {
                          type="qual", palette="Dark2",
                          direction=-1,
                          breaks=c(FALSE,TRUE),
-                         labels=c(paste0("Target Player: ",Target),"Placebo")) +
+                         labels=c(paste0("Target Player: ",Target),
+                                  "Placebo Players (2022 Shift Rate \U2264 20%)")) +
       scale_alpha_manual(name="",
                          breaks=c(FALSE,TRUE),
-                         labels=c(paste0("Target Player: ",Target),"Placebo"),
+                         labels=c(paste0("Target Player: ",Target),
+                                  "Placebo Players (2022 Shift Rate \U2264 20%)"),
                          values=c(1,0.5)) +
-      scale_linewidth_manual(name="",
+      scale_linetype_manual(name="",
                          breaks=c(FALSE,TRUE),
-                         labels=c(paste0("Target Player: ",Target),"Placebo"),
-                         values=c(1.2,1)) +
+                         labels=c(paste0("Target Player: ",Target),
+                                  "Placebo Players (2022 Shift Rate \U2264 20%)"),
+                         values=c("solid","longdash")) +
       geom_vline(xintercept=Interv-0.5,
                  color="grey50", linetype="dashed") +
       theme_bw() + theme(legend.position="bottom") +

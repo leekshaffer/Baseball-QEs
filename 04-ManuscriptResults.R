@@ -101,7 +101,7 @@ write.csv(x=Tbl1 %>%
 
 ## Analysis 2: Player-Specific
 load(file="int/Player_pool_data.Rda")
-BStats <- tibble(stat=c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA"))
+BStats <- tibble(stat=c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS","wOBA"))
 BStats$min <- sapply(BStats$stat, function(x) min(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
 BStats$max <- sapply(BStats$stat, function(x) max(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
 
