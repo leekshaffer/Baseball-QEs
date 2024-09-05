@@ -51,15 +51,16 @@ B.250 <- read_csv(file="data/savant-custom-250PA-2015-2024.csv",
   bind_rows(read_csv(file="data/savant-custom-100PA-2020.csv",
                      col_names=TRUE)) %>%
   dplyr::rename(name=`last_name, first_name`)
-colnames(B.250) <- c("Name","Player_ID","Season",
+colnames(B.250) <- c("Name","Player_ID","Season","Age",
                      "AB","PA","H","1B","2B","3B","HR","K percent","BB percent",
                      "AVG","SLG","OBP","OPS","BABIP","wOBA","xwOBA",
                      "Pull percent","Cent percent", "Oppo percent","batted ball")
-### Drop Jr./Sr./III/II
+### Drop Jr./Sr./III/II and create display name
 B.250$Name_Match <- sub(" Jr.", "", B.250$Name)
 B.250$Name_Match <- sub(" Sr.", "", B.250$Name_Match)
 B.250$Name_Match <- sub(" III", "", B.250$Name_Match)
 B.250$Name_Match <- sub(" II", "", B.250$Name_Match)
+B.250$Name_Disp <- sub("(^.*),\\s(.*$)","\\2 \\1", B.250$Name)
 
 ### Player shift rates (pre-2023) and shade rights (2023-):
 Sav.Shifts <- NULL
@@ -101,3 +102,4 @@ Sav.Shifts[Sav.Shifts$Name=="Alvarez, Pedro","Name_Match"] <- "Álvarez, Pedro"
 ### Save data:
 save(list=c("B.250","Sav.Shifts"),
      file="int/Sav_data.Rda")
+

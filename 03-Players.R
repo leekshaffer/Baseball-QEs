@@ -23,7 +23,7 @@ Interv <- 2023
 ## Create summary data set for players with which seasons they had >= 250PA (50 for 2020), 
 ### and their Shift Categories: 
 S_cols_full <- paste0("S_",15:24)
-Players_seasons <- B.250 %>% group_by(Name,Player_ID,Name_Match) %>%
+Players_seasons <- B.250 %>% group_by(Name,Player_ID,Name_Match,Name_Disp) %>%
   dplyr::summarize(S_15=(2015 %in% Season),
                    S_16=(2016 %in% Season),
                    S_17=(2017 %in% Season),
@@ -59,8 +59,7 @@ Shift_summ <- Sav.Shifts %>% dplyr::filter(Season==2022) %>%
 S_cols_all <- 21:23 ## Make sure these are in order of the variables
 Player_pool <- Players_seasons %>% 
   dplyr::filter(grepl(paste("S_",S_cols_all, sep="", collapse=".*"),Seasons_Dat)) %>%
-  left_join(Shift_summ, by=join_by(Name_Match)) %>%
-  dplyr::mutate(Name_Disp=sub("(^.*),\\s(.*$)","\\2 \\1", Name))
+  left_join(Shift_summ, by=join_by(Name_Match))
 
 Player_interv <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="High")
 Player_ctrl <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="Low")
@@ -213,9 +212,9 @@ for (ID in Player_interv$Player_ID) {
     ## Set up SC:
     synth_player <- SC_data %>%
       synthetic_control(outcome={statval},
-                        unit=Name_Match,
+                        unit=Name_Disp,
                         time=Season,
-                        i_unit=Row$Name_Match,
+                        i_unit=Disp_name,
                         i_time=Interv,
                         generate_placebos=F) %>%
       generate_predictor(time_window=2021,
@@ -227,6 +226,7 @@ for (ID in Player_interv$Player_ID) {
                          BBPerc2021=`BB percent`,
                          KPerc2021=`K percent`) %>%
       generate_predictor(time_window=2022,
+                         Age2022=Age,
                          val2022=get(statval),
                          PA2022=PA,
                          H2022=H,
@@ -273,25 +273,17 @@ for (ID in Player_interv$Player_ID) {
       generate_control()
     
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
-    # TrendPlot <- synth_player %>% plot_trends()
-    # TrendPlot$layers[[1]] <- NULL
-    # TrendPlot <- TrendPlot + 
-    #   geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") + 
-    #   theme_bw() + theme(legend.position="bottom") +
-    #   scale_y_continuous(name=statval,
-    #                      limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
-    #   coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
-    DiffPlot <- synth_player %>% plot_differences()
-    DiffPlot$layers[[2]] <- NULL
-    DiffPlot$layers[[1]] <- NULL
-    DiffPlot <- DiffPlot + geom_hline(yintercept=0, color="grey50", linetype="dashed") + 
-      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
-      theme_bw()
+    # DiffPlot <- synth_player %>% plot_differences()
+    # DiffPlot$layers[[2]] <- NULL
+    # DiffPlot$layers[[1]] <- NULL
+    # DiffPlot <- DiffPlot + geom_hline(yintercept=0, color="grey50", linetype="dashed") + 
+    #   geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+    #   theme_bw()
     
     ggsave(filename=paste0("figs/Players/",Disp_name,"/Weights-",statval,".png"),
            plot=WtPlot)
-    ggsave(filename=paste0("figs/Players/",Disp_name,"/Diff-",statval,".png"),
-           plot=DiffPlot)
+    # ggsave(filename=paste0("figs/Players/",Disp_name,"/Diff-",statval,".png"),
+    #        plot=DiffPlot)
     
     ## Pull results and save:
     if (is.null(Weights_Unit)) {
@@ -402,9 +394,9 @@ for (ID in Player_ctrl$Player_ID) {
     ## Set up SC:
     synth_player <- SC_data %>%
       synthetic_control(outcome={statval},
-                        unit=Name_Match,
+                        unit=Name_Disp,
                         time=Season,
-                        i_unit=Row$Name_Match,
+                        i_unit=Disp_name,
                         i_time=Interv,
                         generate_placebos=F) %>%
       generate_predictor(time_window=2021,
@@ -416,6 +408,7 @@ for (ID in Player_ctrl$Player_ID) {
                          BBPerc2021=`BB percent`,
                          KPerc2021=`K percent`) %>%
       generate_predictor(time_window=2022,
+                         Age2022=Age,
                          val2022=get(statval),
                          PA2022=PA,
                          H2022=H,
@@ -491,6 +484,8 @@ SCs_Results <- SCs_Full %>% dplyr::mutate(Placebo_Unit=FALSE) %>%
   bind_rows(SCs_Plac %>% dplyr::rename(Name=Placebo_Name, Player_ID=Placebo_ID, Name_Disp=Placebo_Disp))
 
 for (statval in BStats_Use) {
+  diff_min <- min(SCs_Results %>% dplyr::filter(Outcome==statval) %>% pull(Diff), na.rm=TRUE)
+  diff_max <- max(SCs_Results %>% dplyr::filter(Outcome==statval) %>% pull(Diff), na.rm=TRUE)
   plot_SC <- ggplot(data=SCs_Results %>% dplyr::filter(Outcome==statval),
                      mapping=aes(x=Season, y=Diff, group=Player_ID,
                                  color=Placebo_Unit, alpha=Placebo_Unit)) +
@@ -498,8 +493,9 @@ for (statval in BStats_Use) {
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
-    scale_y_continuous(name="Difference, Synthetic - Observed") +
-                       # limits=c(-0.25, 0.25)) +
+    scale_y_continuous(name="Difference, Synthetic - Observed",
+                       limits=c(diff_min,diff_max)) +
+    coord_cartesian(ylim=c(diff_min,diff_max)) +
     scale_color_brewer(name="",
                        type="qual", palette="Dark2",
                        direction=-1,
@@ -512,11 +508,46 @@ for (statval in BStats_Use) {
     geom_vline(xintercept=Interv-0.5,
                color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
-    # coord_cartesian(ylim=c(-0.25, 0.25)) +
-    labs(title=paste0("Difference, Synthetic - Observed, for ",statval," by player, ","\U2265",
+    labs(title=paste0("SCM estimates for ",statval," by player, ","\U2265",
                       "250 PA each season, 2017","\U2013","2023"))
   ggsave(filename=paste0("figs/SC Estimates/SC-plot-",statval,".png"),
          plot=plot_SC)
+  
+  for (ID in Player_interv$Player_ID) {
+    Target <- Player_interv$Name_Disp[Player_interv$Player_ID==ID]
+    plot_diff <- ggplot(data=SCs_Results %>% 
+                          dplyr::filter(Outcome==statval & Player_ID==ID) %>%
+                          bind_rows(SCs_Results %>% dplyr::filter(Outcome==statval & Placebo_Unit)),
+                      mapping=aes(x=Season, y=Diff, group=Player_ID,
+                                  color=Placebo_Unit, alpha=Placebo_Unit,
+                                  linewidth=Placebo_Unit)) +
+      geom_line() +
+      scale_x_continuous(name="Season",
+                         breaks=2015:2023,
+                         minor_breaks=NULL) +
+      scale_y_continuous(name="Difference, Synthetic - Observed",
+                         limits=c(diff_min,diff_max)) +
+      coord_cartesian(ylim=c(diff_min,diff_max)) +
+      scale_color_brewer(name="",
+                         type="qual", palette="Dark2",
+                         direction=-1,
+                         breaks=c(FALSE,TRUE),
+                         labels=c(paste0("Target Player: ",Target),"Placebo")) +
+      scale_alpha_manual(name="",
+                         breaks=c(FALSE,TRUE),
+                         labels=c(paste0("Target Player: ",Target),"Placebo"),
+                         values=c(1,0.5)) +
+      scale_linewidth_manual(name="",
+                         breaks=c(FALSE,TRUE),
+                         labels=c(paste0("Target Player: ",Target),"Placebo"),
+                         values=c(1.2,1)) +
+      geom_vline(xintercept=Interv-0.5,
+                 color="grey50", linetype="dashed") +
+      theme_bw() + theme(legend.position="bottom") +
+      labs(title=paste0("SCM estimates for ",statval," for ",Target," and placebos"))
+    ggsave(filename=paste0("figs/Players/",Target,"/Diff-",statval,".png"),
+           plot=plot_diff)
+  }
 }
 
 MSPEs_PRes <- MSPEs_Plac %>% 

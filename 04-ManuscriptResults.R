@@ -193,7 +193,7 @@ for (statval in c("OBP","OPS","wOBA")) {
 ggsave(filename=paste0(outdir,"Figure3.png"),
        plot=plot_SC_OBP+labs(title="A. SCM estimates for OBP by player") + 
          plot_SC_OPS+labs(title="B. SCM estimates for OPS by player") + 
-         plot_SC_wOBA+labs(title="C. SCM estimates for wOBA by playerA") + 
+         plot_SC_wOBA+labs(title="C. SCM estimates for wOBA by player") + 
          plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") & 
          theme(legend.position="bottom"),
        dpi=600, width=13, height=8, units="in")
