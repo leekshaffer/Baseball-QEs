@@ -7,7 +7,7 @@ load(file="int/FG_data.Rda")
 Interv <- 2023
 
 ## Hitting stats to consider:
-BStats <- c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA")
+BStats <- c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS","wOBA")
 
 FG.dat.withCF <- FG.dat.empty %>% dplyr::filter(Season != 2020 & Season <= Interv) %>%
   dplyr::select(all_of(c("Season","Batter",BStats)))

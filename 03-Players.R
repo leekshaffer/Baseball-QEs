@@ -10,7 +10,7 @@ require(tidyverse)
 require(tidysynth)
 
 ## Hitting stats to consider:
-BStats <- tibble(stat=c("AVG","BABIP","K percent","OBP","SLG","OPS","wOBA"))
+BStats <- tibble(stat=c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS","wOBA"))
 
 ## Import Savant data:
 load(file="int/Sav_data.Rda")
