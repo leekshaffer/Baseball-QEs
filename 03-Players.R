@@ -77,11 +77,8 @@ Player_pool_avg <- B.250_pool %>%
   ungroup()
 
 ## Save player pool and shift-categorized result data:
-save(list=c("Player_pool", "B.250_pool"),
+save(list=c("Player_pool", "B.250_pool", "Player_pool_avg"),
      file="int/Player_pool_data.Rda")
-
-save(Player_pool_avg, 
-     file="tbls/Shift_Category_Averages.Rda")
 
 ## Get max and min for consistent plot y-axes:
 BStats$min <- sapply(BStats$stat, function(x) min(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
@@ -518,7 +515,7 @@ for (statval in BStats_Use) {
     # coord_cartesian(ylim=c(-0.25, 0.25)) +
     labs(title=paste0("Difference, Synthetic - Observed, for ",statval," by player, ","\U2265",
                       "250 PA each season, 2017","\U2013","2023"))
-  ggsave(filename=paste0("figs/SC-plot-",statval,".png"),
+  ggsave(filename=paste0("figs/SC Estimates/SC-plot-",statval,".png"),
          plot=plot_SC)
 }
 

@@ -58,8 +58,6 @@ TwoByTwo <- TwoByTwo %>%
               TwoByTwo %>% dplyr::filter(Batter=="LHB") %>% dplyr::select(!c("Batter")) - 
                 TwoByTwo %>% dplyr::filter(Batter=="RHB") %>% dplyr::select(!c("Batter"))))
 TwoByTwo %>% dplyr::select(Batter,ends_with("Diff"))
-save(TwoByTwo,
-     file="tbls/Full_TwoByTwo.Rda")
 
 ## Event study analysis:
 FullES <- FG.dat.empty %>% dplyr::select(Season,Batter,all_of(BStats)) %>%
@@ -79,7 +77,6 @@ for (val in BStats) {
   FullES[paste(val,"ES",sep="_")] <- FullES[paste(val,"Diff_LHB",sep="_")]-FullES[paste(val,"Diff_RHB",sep="_")]
 }
 FullES %>% dplyr::select(Season,Type,ends_with("ES"))
-save(FullES, file="tbls/Full_ES.Rda")
 
 for (val in BStats) {
   plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season <= Interv), 
