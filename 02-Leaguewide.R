@@ -54,7 +54,7 @@ for (val in BStats) {
   TwoByTwo[paste(val,"Diff",sep="_")] <- TwoByTwo[paste(val,"2023",sep="_")]-TwoByTwo[paste(val,"2022",sep="_")]
 }
 TwoByTwo <- TwoByTwo %>%
-  bind_rows(c(Batter="Diff, LHB-RHB",
+  bind_rows(c(Batter="Diff (LHB \U2212 RHB)",
               TwoByTwo %>% dplyr::filter(Batter=="LHB") %>% dplyr::select(!c("Batter")) - 
                 TwoByTwo %>% dplyr::filter(Batter=="RHB") %>% dplyr::select(!c("Batter"))))
 TwoByTwo %>% dplyr::select(Batter,ends_with("Diff"))
