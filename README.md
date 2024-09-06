@@ -1,5 +1,6 @@
 # Baseball-QEs
 Author: Lee Kennedy-Shaffer, PhD
+
 Assistant Professor, Department of Biostatistics, Yale School of Public Health
 
 Created: August 16, 2024
@@ -7,7 +8,7 @@ Created: August 16, 2024
 Methods and analysis for the impact of rule changes on MLB and its players, using quasi-experimental methods and panel data.
 
 A Shiny App to interactively display results of the analysis is available at:
-https://leekshaffer.shinyapps.io/Baseball-QEs/
+https://bit.ly/SCM-baseball
 
 Or by using the app.R file in this repository.
 
