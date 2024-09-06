@@ -189,7 +189,7 @@ plot_SC_ests <- function(statval, SC.dat,
     labs(title=paste0(tagval,title))
 }
 
-plot_SC_ests_all <- function(statval, SC.dat, tagval=NULL) {
+plot_SC_ests_all <- function(statval, SC.dat, LW=1, tagval=NULL) {
   plot_SC_ests(statval, SC.dat,
                LegName="Analysis Type",
                LegVar="Placebo_Unit",
@@ -200,6 +200,6 @@ plot_SC_ests_all <- function(statval, SC.dat, tagval=NULL) {
                LegAlpha=c(1,0.5), 
                LegLTY=c("solid","longdash"), 
                title=paste0("SCM estimates for ",statval," for all included players"),
-               LW=1,
+               LW=LW,
                tagval)
 }

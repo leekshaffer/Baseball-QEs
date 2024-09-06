@@ -108,9 +108,9 @@ SCs_Results %>% dplyr::filter(Season==Interv) %>%
 
 ### Manuscript Figure 3:
 ggsave(filename=paste0(MSoutdir,"Figure3.png"),
-       plot=plot_SC_ests_all("OBP", SCs_Results, "A. ") + 
-         plot_SC_ests_all("OPS", SCs_Results, "B. ") + 
-         plot_SC_ests_all("wOBA", SCs_Results, "C. ") + 
+       plot=plot_SC_ests_all("OBP", SCs_Results, LW=0.8, tagval="A. ") + 
+         plot_SC_ests_all("OPS", SCs_Results, LW=0.8, tagval="B. ") + 
+         plot_SC_ests_all("wOBA", SCs_Results, LW=0.8, tagval="C. ") + 
          guide_area() +
          plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
          theme(legend.position="inside",

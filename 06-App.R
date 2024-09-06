@@ -7,16 +7,11 @@ Interv <- 2023
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
 load(file="res/SC-Results-Complete.Rda")
+source("./04-FigureCommands.R", local=TRUE)
 
 ## Lists
 Player_Choices <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Name_Disp)
-BStats_Use <- tibble(stat=c("OBP","OPS","wOBA"))
-BStats_Use$min <- sapply(BStats_Use$stat, function(x) min(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
-BStats_Use$max <- sapply(BStats_Use$stat, function(x) max(B.250_pool[B.250_pool$Shift_Cat_2022 != "Medium",x], na.rm=TRUE))
-BStats_Use$diff_min <- sapply(BStats_Use$stat,
-                              function(x) min(SCs_Results %>% dplyr::filter(Outcome==x) %>% pull(Diff), na.rm=TRUE))
-BStats_Use$diff_max <- sapply(BStats_Use$stat,
-                              function(x) max(SCs_Results %>% dplyr::filter(Outcome==x) %>% pull(Diff), na.rm=TRUE))
+BStats_Use <- BStats %>% dplyr::filter(Use)
 All_token <- "-All-"
 
 ## Data functions for player & outcome combination:
@@ -282,7 +277,8 @@ ui <- fluidPage(
 
 ## Server:
 server <- function(input, output) {
-  output$URLs <- renderUI({
+
+    output$URLs <- renderUI({
     if (input$InName==All_token) {
       tagList(
         h4("For 2022 shift rates, see:"),
@@ -330,38 +326,192 @@ server <- function(input, output) {
   
   output$plot1 <- renderPlot({
     if (input$InStat==All_token) {
-      plot_diff(display_name=input$InName,
-                statval=BStats_Use$stat[1])
+      if (input$InName==All_token) {
+        plot_SC_ests_all(BStats_Use$stat[1], SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      } else {
+        Target <- input$InName
+        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
+        SC_data <- SCs_Results %>% 
+          dplyr::filter(Outcome==BStats_Use$stat[1] & 
+                          (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
+                          (Season %in% unique(SCs$Season)))
+        plot_SC_ests(BStats_Use$stat[1], SC_data,
+                     LegName=NULL,
+                     LegVar="Placebo_Unit",
+                     LegLabs=c(paste0("Target Player: ",Target),
+                               "Placebo Players (2022 Shift Rate \U2264 20%)"), 
+                     LegBreaks=c(FALSE,TRUE),
+                     LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                     LegAlpha=c(1,0.5), 
+                     LegLTY=c("solid","longdash"), 
+                     title=paste0("SCM estimates for ",BStats_Use$stat[1]," for ",Target,
+                                  " and placebos"),
+                     LW=1.2,
+                     tagval=NULL) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      }
     } else {
-      plot_spag(display_name=input$InName,
-                statval=input$InStat)
+      if (input$InName==All_token) {
+        plot_Traj(statval=input$InStat,
+                  Traj.dat=B.250_pool %>% dplyr::filter(Shift_Cat_2022 != "Medium"),
+                  CatVar="Shift_Cat_2022",
+                  CatName=NULL,
+                  CatBreaks=c("High","Low"),
+                  CatLabs=c("Target Players (2022 Shift Rate \U2265 80%)",
+                            "Control Players (2022 Shift Rate \U2264 20%)"),
+                  CatCols=brewer.pal(3, "Dark2")[c(3,1)],
+                  CatLTY=c("solid","longdash"),
+                  CatAlpha=c(1,.4),
+                  Type="All",
+                  Fixed=TRUE) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      } else {
+        Target <- input$InName
+        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
+        SC_data <- SCs_Results %>% 
+          dplyr::filter(Outcome==input$InStat & 
+                          (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
+                          (Season %in% unique(SCs$Season)))
+        plot_Traj(statval=input$InStat,
+                  Traj.dat=SC_data %>% dplyr::select(-c("Synthetic","Diff")) %>%
+                    pivot_wider(names_from="Outcome",
+                                values_from="Observed"),
+                  CatVar="Placebo_Unit",
+                  CatName=NULL,
+                  CatBreaks=c(FALSE,TRUE),
+                  CatLabs=c(paste0("Target Player: ",Target),
+                            "Control Players (2022 Shift Rate \U2264 20%)"),
+                  CatCols=brewer.pal(3, "Dark2")[c(3,1)],
+                  CatLTY=c("solid","longdash"),
+                  CatAlpha=c(1,.4),
+                  Type="Target",
+                  Fixed=TRUE,
+                  Target=input$InName,
+                  tagval=NULL) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      }
     }
   })
   
   output$plot2 <- renderPlot({
     if (input$InStat==All_token) {
-      plot_diff(display_name=input$InName,
-                statval=BStats_Use$stat[2])
+      if (input$InName==All_token) {
+        plot_SC_ests_all(BStats_Use$stat[2], SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      } else {
+        Target <- input$InName
+        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
+        SC_data <- SCs_Results %>% 
+          dplyr::filter(Outcome==BStats_Use$stat[2] & 
+                          (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
+                          (Season %in% unique(SCs$Season)))
+        plot_SC_ests(BStats_Use$stat[2], SC_data,
+                     LegName=NULL,
+                     LegVar="Placebo_Unit",
+                     LegLabs=c(paste0("Target Player: ",Target),
+                               "Placebo Players (2022 Shift Rate \U2264 20%)"), 
+                     LegBreaks=c(FALSE,TRUE),
+                     LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                     LegAlpha=c(1,0.5), 
+                     LegLTY=c("solid","longdash"), 
+                     title=paste0("SCM estimates for ",BStats_Use$stat[2]," for ",Target,
+                                  " and placebos"),
+                     LW=1.2,
+                     tagval=NULL) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      }
     } else {
       if (input$InName==All_token) {
-        plot_diff(display_name=input$InName,
-                  statval=input$InStat)
+        plot_SC_ests_all(input$InStat, SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
       } else {
-        plot_trend(display_name=input$InName,
-                  statval=input$InStat)
+        Target <- input$InName
+        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
+        SC_data <- SCs_Results %>% 
+          dplyr::filter(Outcome==input$InStat & 
+                          (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
+                          (Season %in% unique(SCs$Season)))
+        plot_Comp(input$InStat, SC_data,
+                  display_name=Target,
+                  tagval=NULL) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
       }
     }
   })
   
   output$plot3 <- renderPlot({
     if (input$InStat==All_token) {
-      plot_diff(display_name=input$InName,
-                statval=BStats_Use$stat[3])
+      if (input$InName==All_token) {
+        plot_SC_ests_all(BStats_Use$stat[3], SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      } else {
+        Target <- input$InName
+        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
+        SC_data <- SCs_Results %>% 
+          dplyr::filter(Outcome==BStats_Use$stat[3] & 
+                          (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
+                          (Season %in% unique(SCs$Season)))
+        plot_SC_ests(BStats_Use$stat[3], SC_data,
+                     LegName=NULL,
+                     LegVar="Placebo_Unit",
+                     LegLabs=c(paste0("Target Player: ",Target),
+                               "Placebo Players (2022 Shift Rate \U2264 20%)"), 
+                     LegBreaks=c(FALSE,TRUE),
+                     LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                     LegAlpha=c(1,0.5), 
+                     LegLTY=c("solid","longdash"), 
+                     title=paste0("SCM estimates for ",BStats_Use$stat[3]," for ",Target,
+                                  " and placebos"),
+                     LW=1.2,
+                     tagval=NULL) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+      }
     } else {
       if (input$InName==All_token) {
       } else {
-      plot_diff(display_name=input$InName,
-                 statval=input$InStat)
+        Target <- input$InName
+        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
+        SC_data <- SCs_Results %>% 
+          dplyr::filter(Outcome==input$InStat & 
+                          (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
+                          (Season %in% unique(SCs$Season)))
+        plot_SC_ests(input$InStat, SC_data,
+                     LegName=NULL,
+                     LegVar="Placebo_Unit",
+                     LegLabs=c(paste0("Target Player: ",Target),
+                               "Placebo Players (2022 Shift Rate \U2264 20%)"), 
+                     LegBreaks=c(FALSE,TRUE),
+                     LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                     LegAlpha=c(1,0.5), 
+                     LegLTY=c("solid","longdash"), 
+                     title=paste0("SCM estimates for ",input$InStat," for ",Target,
+                                  " and placebos"),
+                     LW=1.2,
+                     tagval=NULL) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
       }
     }
   })
