@@ -21,21 +21,21 @@ plot_OBP <- plot_DIDs("OBP", FG.dat.withCF, FullES, tagvals=c("B. ","D. "))
 
 ggsave(filename=paste0(MSoutdir,"Figure1.png"),
        plot = plot_BABIP[["Trend"]] + theme(legend.position="inside",
-                                            legend.position.inside=c(.184,.215),
+                                            legend.position.inside=c(.201,.178),
                                             legend.background=element_rect(fill="white",
                                                                            color="grey50"),
                                             legend.title=element_text(size=rel(1.2)),
                                             legend.text=element_text(size=rel(1.2))) +
          plot_OBP[["Trend"]] + theme(legend.position="none") +
          plot_BABIP[["ES"]] + theme(legend.position="inside",
-                                    legend.position.inside=c(.126,.815),
+                                    legend.position.inside=c(.14,.86),
                                     legend.background=element_rect(fill="white",
                                                                    color="grey50"),
                                     legend.title=element_text(size=rel(1.2)),
                                     legend.text=element_text(size=rel(1.2))) +
          plot_OBP[["ES"]] + theme(legend.position="none") +
          plot_layout(ncol=2, nrow=2, byrow=TRUE, guides="keep"),
-       dpi=600, width=13, height=8, units="in")
+       dpi=600, width=12, height=8.1, units="in")
 
 ### Full set of DID results:
 DIDoutdir <- "figs/DID Analysis/"
@@ -84,7 +84,7 @@ ggsave(filename=paste0(MSoutdir,"Figure2.png"),
                legend.text=element_text(size=rel(1.2)),
                legend.title=element_text(size=rel(1.2)),
                legend.direction="vertical"),
-       dpi=600, width=13, height=8, units="in")
+       dpi=600, width=12, height=8.1, units="in")
 
 
 ### Manuscript Table 2:
@@ -118,7 +118,7 @@ ggsave(filename=paste0(MSoutdir,"Figure3.png"),
                legend.text=element_text(size=rel(1.2)),
                legend.title=element_text(size=rel(1.2)),
                legend.direction="vertical"),
-       dpi=600, width=13, height=8, units="in")
+       dpi=600, width=12, height=8.1, units="in")
 
 ### Full Set of Outcome Trajectory plots by Player and by Shift Category:
 Trajoutdir <- "figs/Trajectories/"
