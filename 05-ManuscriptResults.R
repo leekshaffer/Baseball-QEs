@@ -1,4 +1,4 @@
-## 04-ManuscriptResults.R
+## 05-ManuscriptResults.R
 ## Creation of figures, tables, and key results for manuscript
 
 require(tidyverse)
@@ -46,11 +46,11 @@ plot_DIDs <- function(statval, tagvals=NULL) {
     #                    direction=-1,
     #                    breaks=c("Placebo","Intervention")) +
     scale_color_manual(name="Analysis Type",
-                       values=brewer.pal(3,"Dark2")[c(1,3)],
-                       breaks=c("Placebo","Intervention")) +
+                       values=brewer.pal(3,"Dark2")[c(3,1)],
+                       breaks=c("Intervention","Placebo")) +
     scale_shape_manual(name="Analysis Type",
-                       values=c(18,19),
-                       breaks=c("Placebo","Intervention")) +
+                       values=c(19,18),
+                       breaks=c("Intervention","Placebo")) +
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
@@ -66,12 +66,23 @@ plot_BABIP <- plot_DIDs("BABIP", tagvals=c("A. ","C. "))
 plot_OBP <- plot_DIDs("OBP", tagvals=c("B. ","D. "))
 
 ggsave(filename=paste0(outdir,"Figure1.png"),
-       plot = plot_BABIP[["Trend"]] + 
-         plot_OBP[["Trend"]] + 
-         plot_BABIP[["ES"]] +
-         plot_OBP[["ES"]] + 
-         plot_layout(ncol=2, nrow=2, byrow=TRUE, guides="collect") &
-         theme(legend.position="bottom"),
+       plot = plot_BABIP[["Trend"]] + theme(legend.position="inside",
+                                            legend.position.inside=c(.184,.215),
+                                            legend.background=element_rect(fill="white",
+                                                                           color="grey50"),
+                                            legend.title=element_text(size=rel(1.2)),
+                                            legend.text=element_text(size=rel(1.2))) +
+         plot_OBP[["Trend"]] + theme(legend.position="none") +
+         plot_BABIP[["ES"]] + theme(legend.position="inside",
+                                    legend.position.inside=c(.126,.815),
+                                    legend.background=element_rect(fill="white",
+                                                                   color="grey50"),
+                                    legend.title=element_text(size=rel(1.2)),
+                                    legend.text=element_text(size=rel(1.2))) +
+         plot_OBP[["ES"]] + theme(legend.position="none") +
+         plot_layout(ncol=2, nrow=2, byrow=TRUE, guides="keep"),
+         # plot_layout(ncol=2, nrow=2, byrow=TRUE, guides="collect") &
+         # theme(legend.position="bottom"),
        dpi=600, width=13, height=8, units="in")
  
 ### 2x2 tables for key outcomes:
@@ -91,6 +102,7 @@ load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
 Weights_Pred %>% dplyr::arrange(desc(OPS_weight))
 Weights_Pred %>% dplyr::arrange(desc(wOBA_weight))
 Weights_Pred %>% dplyr::arrange(desc(OBP_weight))
+SCs %>% dplyr::filter(Intervention)
 
 plot_Comp <- function(statval, display_name, tagval=NULL) {
   SCs_targ <- SCs_Results %>% 
@@ -102,13 +114,13 @@ plot_Comp <- function(statval, display_name, tagval=NULL) {
                      group=Result, linetype=Result, color=Result, shape=Result)) +
     geom_line(linewidth=1.2) + geom_point(size=2.4) +
     theme_bw() + theme(legend.position="bottom") +
-    scale_color_manual(name=NULL,
+    scale_color_manual(name="Outcome Value",
                        values=c("#002d72","#ff5910"),
                        breaks=c("Observed","Synthetic")) +
-    scale_linetype_manual(name=NULL,
+    scale_linetype_manual(name="Outcome Value",
                           values=c("solid","dotted"),
                           breaks=c("Observed","Synthetic")) +
-    scale_shape_manual(name=NULL,
+    scale_shape_manual(name="Outcome Value",
                        values=c(15,17),
                        breaks=c("Observed","Synthetic")) +
     scale_x_continuous(name="Season",
@@ -122,11 +134,16 @@ plot_Comp <- function(statval, display_name, tagval=NULL) {
 }
 
 ggsave(filename=paste0(outdir,"Figure2.png"),
-       plot=plot_Comp("OBP", Target, "A. ") + 
-         plot_Comp("OPS", Target, "B. ") + 
-         plot_Comp("wOBA", Target, "C. ") + 
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") & 
-         theme(legend.position="bottom"),
+       plot=plot_Comp("OBP", Target, "A. ") +
+         plot_Comp("OPS", Target, "B. ") +
+         plot_Comp("wOBA", Target, "C. ") +
+         guide_area() +
+         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+         theme(legend.background=element_rect(fill="white",
+                                              color="grey50"),
+               legend.text=element_text(size=rel(1.2)),
+               legend.title=element_text(size=rel(1.2)),
+               legend.direction="vertical"),
        dpi=600, width=13, height=8, units="in")
 
 
@@ -160,17 +177,17 @@ plot_SC_ests <- function(statval, tagval=NULL) {
     scale_y_continuous(name="Difference, Synthetic - Observed",
                        limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
-    scale_color_manual(name=NULL,
+    scale_color_manual(name="Analysis Type",
                        breaks=c(FALSE,TRUE),
                        labels=c("Target Players (2022 Shift Rate \U2265 80%)",
                                 "Placebo Players (2022 Shift Rate \U2264 20%)"),
                        values=brewer.pal(3, "Dark2")[c(3,1)]) +
-    scale_alpha_manual(name=NULL,
+    scale_alpha_manual(name="Analysis Type",
                        breaks=c(FALSE,TRUE),
                        labels=c("Target Players (2022 Shift Rate \U2265 80%)",
                                 "Placebo Players (2022 Shift Rate \U2264 20%)"),
                        values=c(1,0.5)) +
-    scale_linetype_manual(name=NULL,
+    scale_linetype_manual(name="Analysis Type",
                           breaks=c(FALSE,TRUE),
                           labels=c("Target Players (2022 Shift Rate \U2265 80%)",
                                    "Placebo Players (2022 Shift Rate \U2264 20%)"),
@@ -185,6 +202,11 @@ ggsave(filename=paste0(outdir,"Figure3.png"),
        plot=plot_SC_ests("OBP", "A. ") + 
          plot_SC_ests("OPS", "B. ") + 
          plot_SC_ests("wOBA", "C. ") + 
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") & 
-         theme(legend.position="bottom"),
+         guide_area() +
+       plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+       theme(legend.position="inside",
+             legend.background=element_rect(fill="white", color="grey50"),
+             legend.text=element_text(size=rel(1.2)),
+             legend.title=element_text(size=rel(1.2)),
+             legend.direction="vertical"),
        dpi=600, width=13, height=8, units="in")
