@@ -160,6 +160,8 @@ S_cols_check <- 15:19 ## Make sure these are in order of the variables
 SCs_Full <- NULL
 ### Stats to use and the graph parameters:
 BStats_Use <- c("wOBA","OBP","OPS")
+
+### Run the Synthetic Controls:
 for (ID in Player_interv$Player_ID) {
     ## Reset data sets:
     Weights_Unit <- NULL
@@ -354,6 +356,8 @@ for (ID in Player_interv$Player_ID) {
     SCs_Full <- SCs_Full %>% 
       bind_rows(SCs %>% mutate(Name=Row$Name, Name_Disp=Disp_name, Player_ID=ID))
 }
+
+### Get summary results:
 SCs_Full <- SCs_Full %>% 
        dplyr::select(Name,Player_ID,Outcome,Season,Intervention,Observed,Synthetic,Diff,Name_Disp)
 MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Intervention) %>%
@@ -478,6 +482,8 @@ for (ID in Player_ctrl$Player_ID) {
                              Placebo_Unit=TRUE))
 }
 
+
+### Get summary results with placebo tests:
 MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Outcome,Intervention) %>%
   dplyr::summarize(MSPE=mean(Diff^2)) %>%
   ungroup() %>%
@@ -490,6 +496,7 @@ MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Outcome
 SCs_Results <- SCs_Full %>% dplyr::mutate(Placebo_Unit=FALSE) %>%
   bind_rows(SCs_Plac %>% dplyr::rename(Name=Placebo_Name, Player_ID=Placebo_ID, Name_Disp=Placebo_Disp))
 
+## Plot SC results for all players:
 for (statval in BStats_Use) {
   diff_min <- min(SCs_Results %>% dplyr::filter(Outcome==statval) %>% pull(Diff), na.rm=TRUE)
   diff_max <- max(SCs_Results %>% dplyr::filter(Outcome==statval) %>% pull(Diff), na.rm=TRUE)
@@ -565,6 +572,7 @@ for (statval in BStats_Use) {
   }
 }
 
+### Get placebo test results:
 MSPEs_PRes <- MSPEs_Plac %>% 
   left_join(SCs_Plac %>% dplyr::filter(Intervention) %>% 
               dplyr::select(Placebo_ID,Outcome,Season,Diff) %>%
@@ -606,5 +614,6 @@ MSPEs_Signif <- MSPEs_Results %>% group_by(Outcome) %>%
   dplyr::summarize(across(starts_with("Sig"),
                           .fns=mean))
 
+### Save results:
 save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results","MSPEs_Signif"),
      file="res/SC-Results-Complete.Rda")

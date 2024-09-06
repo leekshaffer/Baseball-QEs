@@ -2,6 +2,7 @@
 ## Importing, cleaning, and preparing Baseball Savant and FanGraphs data
 
 require(tidyverse)
+require(baseballr) ## used to map across IDs
 
 ## Import FG data:
 
@@ -43,6 +44,9 @@ FG.dat.empty <- FG.dat.empty %>%
 save(list=c("FG.dat","FG.dat.empty"),
      file="int/FG_data.Rda")
 
+## Import ID-matching info:
+Crosswalk <- chadwick_player_lu()
+
 ## Import Savant data:
 
 ### Overall player data:
@@ -61,6 +65,11 @@ B.250$Name_Match <- sub(" Sr.", "", B.250$Name_Match)
 B.250$Name_Match <- sub(" III", "", B.250$Name_Match)
 B.250$Name_Match <- sub(" II", "", B.250$Name_Match)
 B.250$Name_Disp <- sub("(^.*),\\s(.*$)","\\2 \\1", B.250$Name)
+
+### Add FG and BRef IDs:
+B.250 <- B.250 %>% left_join(Crosswalk %>% dplyr::select(key_mlbam, key_bbref, key_fangraphs, 
+                                                         name_first, name_last),
+                             by=join_by(Player_ID==key_mlbam))
 
 ### Player shift rates (pre-2023) and shade rights (2023-):
 Sav.Shifts <- NULL

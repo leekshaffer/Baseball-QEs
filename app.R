@@ -20,6 +20,27 @@ BStats_Use$diff_max <- sapply(BStats_Use$stat,
 All_token <- "-All-"
 
 ## Data functions for player & outcome combination:
+### Get player info from name:
+player_info <- function(display_name) {
+  B.250_row <- B.250_pool %>% dplyr::filter(Season==2022 & Name_Disp==display_name)
+  Pool_row <- Player_pool %>% dplyr::filter(Name_Disp==display_name)
+  list(First=B.250_row$name_first, Last=B.250_row$name_last,
+         Shift_Perc_2022=Pool_row$Shift_Perc_2022,
+         FG_ID=B.250_row$key_fangraphs,
+         BR_ID=B.250_row$key_bbref,
+         MLB_ID=B.250_row$Player_ID,
+         LastInit=tolower(substr(B.250_row$name_last, 1, 1)),
+       BR_URL=paste0("https://www.baseball-reference.com/players/",
+                     tolower(substr(B.250_row$name_last, 1, 1)),
+                     "/", B.250_row$key_bbref, ".shtml"),
+       FG_URL=paste0("https://www.fangraphs.com/players/",
+                     B.250_row$name_first,"-",B.250_row$name_last,
+                     "/",B.250_row$key_fangraphs, "/stats"),
+       MLB_BPL_URL=paste0("https://baseballsavant.mlb.com/visuals/batter-positioning?playerId=",
+                          B.250_row$Player_ID,
+                          "&teamId=&opponent=&firstBase=0&shift=1&season=2022&attempts=250"))
+}
+
 ### Effect Estimates & P-Values Table:
 ests_tbl <- function(display_name,statval) {
   if (display_name==All_token) {
@@ -237,10 +258,14 @@ ui <- fluidPage(
       # h5("Code Available:"),
       # h6("https://github.com/leekshaffer/baseball-qes"),
       h5("Data Sources:"),
-      h6("Baseball Savant Custom Leaderboard, https://baseballsavant.mlb.com/leaderboard/custom;"),
-      h6("Baseball Savant Batter Positioning Leaderboard, https://baseballsavant.mlb.com/visuals/batter-positioning;")
+      a("Baseball Savant Custom Leaderboard",
+        href="https://baseballsavant.mlb.com/leaderboard/custom"),
+      br(),
+      a("Baseball Savant Batter Positioning Leaderboard",
+        href="https://baseballsavant.mlb.com/visuals/batter-positioning")
     ),
     mainPanel(
+      uiOutput("URLs"),
       tabPanel(title="Effect Estimate(s)", 
                DT::dataTableOutput('tbl1')),
       tabPanel(title="SCM Weights", 
@@ -254,6 +279,28 @@ ui <- fluidPage(
 
 ## Server:
 server <- function(input, output) {
+  output$URLs <- renderUI({
+    if (input$InName==All_token) {
+      tagList(
+        h4("For 2022 shift rates, see:"),
+        a("Batter Positioning Leaderboard, 2022", 
+          href=paste0("https://baseballsavant.mlb.com/visuals/batter-positioning?",
+                      "playerId=545361&teamId=&opponent=&firstBase=0",
+                      "&shift=1&season=2022&attempts=250&batSide=R")))
+    } else {
+      Info <- player_info(input$InName)
+      tagList(
+        h4(paste0("Useful links for ",input$InName),":"),
+        a("Batter Positioning Leaderboard, 2022",
+          href=Info$MLB_BPL_URL),
+        br(),
+        a("FanGraphs Player Page",
+          href=Info$FG_URL),
+        br(),
+        a("Baseball Reference Player Page",
+          href=Info$BR_URL))
+    }
+  })
   output$tbl1 <- DT::renderDataTable({
     if (input$InName==All_token) {
       DT::datatable(ests_tbl(input$InName, input$InStat), 
