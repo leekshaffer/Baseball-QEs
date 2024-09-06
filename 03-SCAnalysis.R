@@ -386,20 +386,9 @@ PVals <- function(row,PlacData,ColName) {
            PVal.ratio=mean(c(dat$Ratio,Ratio_Value) >= Ratio_Value)))
 }
 
-psig <- 0.05
-
 MSPEs_Results <- MSPEs_Res %>%
   bind_cols(t(apply(MSPEs_Res, 1,
-                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_2023")))) %>%
-  mutate(Sig = PVal < psig,
-         Sig.ex20 = PVal.ex20 < psig,
-         Sig.ex5 = PVal.ex5 < psig,
-         Sig.ex2 = PVal.ex2 < psig,
-         Sig.ratio = PVal.ratio < psig)
-
-MSPEs_Signif <- MSPEs_Results %>% group_by(Outcome) %>%
-  dplyr::summarize(across(starts_with("Sig"),
-                          .fns=mean))
+                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_2023"))))
 
 ## Graphical Parameters:
 BStats <- BStats %>% 
@@ -421,5 +410,5 @@ BStats <- BStats %>%
 ### Save internal data and results data:
 save(list=c("Player_pool", "B.250_pool", "Player_pool_avg", "BStats"),
      file="int/Player_pool_data.Rda")
-save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results","MSPEs_Signif"),
+save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
      file="res/SC-Results-Complete.Rda")
