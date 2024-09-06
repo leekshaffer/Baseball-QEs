@@ -37,7 +37,7 @@ plot_DIDs <- function(statval, tagvals=NULL) {
   plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season != 2020 & Season <= Interv), 
                     mapping=aes(x=Season, y=get(paste0(statval,"_ES")), 
                                 color=Type, shape=Type)) +
-    geom_point(size=2.5) +
+    geom_point(size=2.8) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     geom_hline(yintercept=0, color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
@@ -164,17 +164,17 @@ plot_SC_ests <- function(statval, tagval=NULL) {
                        breaks=c(FALSE,TRUE),
                        labels=c("Target Players (2022 Shift Rate \U2265 80%)",
                                 "Placebo Players (2022 Shift Rate \U2264 20%)"),
-                       values=brewer.pal(3, "Dark2")[c(1,3)]) +
+                       values=brewer.pal(3, "Dark2")[c(3,1)]) +
     scale_alpha_manual(name=NULL,
                        breaks=c(FALSE,TRUE),
                        labels=c("Target Players (2022 Shift Rate \U2265 80%)",
                                 "Placebo Players (2022 Shift Rate \U2264 20%)"),
-                       values=c(0.5,1)) +
+                       values=c(1,0.5)) +
     scale_linetype_manual(name=NULL,
                           breaks=c(FALSE,TRUE),
                           labels=c("Target Players (2022 Shift Rate \U2265 80%)",
                                    "Placebo Players (2022 Shift Rate \U2264 20%)"),
-                          values=c("longdash","solid")) +
+                          values=c("solid","longdash")) +
     geom_vline(xintercept=Interv-0.5,
                color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
