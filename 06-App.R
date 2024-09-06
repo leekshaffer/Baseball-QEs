@@ -174,7 +174,7 @@ plot_trend <- function(display_name,statval) {
                           dplyr::filter(Outcome==statval, Result != "Diff"), 
                         mapping=aes(x=Season, y=Value, 
                                     group=Result, linetype=Result, color=Result)) +
-      geom_line(linewidth=1.2) + geom_point(shape=17, size=2.2) +
+      geom_line(linewidth=1.2) + geom_point(size=2.2) +
       theme_bw() + theme(legend.position="bottom") +
       scale_color_manual(name=NULL,
                          values=c("#002d72","#ff5910"),
@@ -182,6 +182,9 @@ plot_trend <- function(display_name,statval) {
       scale_linetype_manual(name=NULL,
                             values=c("solid","dotted"),
                             breaks=c("Observed","Synthetic")) +
+      scale_shape_manual(name=NULL,
+                         values=c(15,17),
+                         breaks=c("Observed","Synthetic")) +
       scale_x_continuous(name="Season",
                          breaks=2015:2023,
                          minor_breaks=NULL) +
