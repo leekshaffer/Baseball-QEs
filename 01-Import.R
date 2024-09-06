@@ -1,4 +1,4 @@
-## 01-import.R
+## 01-Import.R
 ## Importing, cleaning, and preparing Baseball Savant and FanGraphs data
 
 require(tidyverse)
