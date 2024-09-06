@@ -22,29 +22,6 @@ for (year in Interv) {
                          FG.dat.withCF %>% dplyr::filter(Season==year-1, Batter=="RHB") %>% dplyr::select(all_of(BStats))))
 }
 
-## Plot trends with bases empty:
-for (val in BStats) {
-  plot_trend <- ggplot(data=FG.dat.withCF %>% dplyr::filter(Season != 2020 & Season <= Interv),
-         mapping=aes(x=Season, y=get(val), group=Batter, color=Batter, linetype=Batter)) +
-    geom_line(linewidth=1.2) + geom_point(shape=17, size=2.2) +
-    theme_bw() + theme(legend.position="bottom") +
-    scale_color_manual(name="Batter Handedness",
-                       values=c("#a6611a","#92c5de","#a6611a"),
-                       breaks=c("LHB","RHB","Counterfactual LHB")) +
-    scale_linetype_manual(name="Batter Handedness",
-                          values=c("solid","dotted","dotted"),
-                          breaks=c("LHB","RHB","Counterfactual LHB")) +
-    scale_x_continuous(name="Season",
-                       breaks=2015:2023,
-                       minor_breaks=NULL) +
-    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
-    labs(title=paste0("Trend in ",val," by batter handedness, bases empty, 2015",
-                      "\U2013","2023"),
-         y=val)
-  ggsave(filename = paste0("figs/Trends/trend-plot-",val,".png"),
-         plot=plot_trend)
-}
-
 ## 2022 vs. 2023 2x2 table:
 TwoByTwo <- FG.dat.empty %>% dplyr::filter(Season %in% c(2022,2023)) %>%
   dplyr::select(Season,Batter,all_of(BStats)) %>%
@@ -77,25 +54,6 @@ for (val in BStats) {
   FullES[paste(val,"ES",sep="_")] <- FullES[paste(val,"Diff_LHB",sep="_")]-FullES[paste(val,"Diff_RHB",sep="_")]
 }
 FullES %>% dplyr::select(Season,Type,ends_with("ES"))
-
-for (val in BStats) {
-  plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season <= Interv), 
-         mapping=aes(x=Season, y=get(paste(val,"ES",sep="_")), color=Type)) +
-    geom_point(size=2.5) +
-    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
-    geom_hline(yintercept=0, color="grey50", linetype="dashed") +
-    theme_bw() + theme(legend.position="bottom") +
-    scale_color_brewer(name=NULL,
-                       type="qual", palette="Dark2") +
-    scale_x_continuous(name="Season",
-                       breaks=2015:2023,
-                       minor_breaks=NULL) +
-    labs(y=paste0("Change in ",val," from previous year, LHB","\U2013","RHB"),
-         title=paste0("Event study analysis for ",val,
-                      ", bases empty, 1-year difference, LHB","\U2013","RHB"))
-  ggsave(filename = paste0("figs/Event Studies/ES-plot-",val,".png"),
-         plot=plot_ES)
-}
 
 save(list=c("FG.dat.withCF","TwoByTwo","FullES"),
      file="int/DID_data.Rda")

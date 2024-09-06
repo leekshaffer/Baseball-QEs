@@ -1,18 +1,14 @@
-## 05-ManuscriptResults.R
-## Creation of figures, tables, and key results for manuscript
+## 04-FigureCommands.R
+## Functions to generate figures from results
 
 require(tidyverse)
-require(patchwork)
 require(RColorBrewer)
-
-outdir <- "figs/Manuscript/"
 Interv <- 2023
 
-## Analysis 1: League-Wide
-load(file="int/DID_data.Rda")
+## DID Analysis Plots:
 
-plot_DIDs <- function(statval, tagvals=NULL) {
-  plot_trend <- ggplot(data=FG.dat.withCF %>% dplyr::filter(Season != 2020 & Season <= Interv),
+plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat, tagvals=NULL) {
+  plot_trend <- ggplot(data=DID.CF.dat %>% dplyr::filter(Season != 2020 & Season <= Interv),
                        mapping=aes(x=Season, y=get(statval), 
                                    group=Batter, color=Batter, linetype=Batter,
                                    shape=Batter)) +
@@ -34,17 +30,13 @@ plot_DIDs <- function(statval, tagvals=NULL) {
     labs(title=paste0(tagvals[1],"Trend in ",statval," by batter handedness, bases empty"),
          y=statval)
   
-  plot_ES <- ggplot(data=FullES %>% dplyr::filter(Season != 2020 & Season <= Interv), 
+  plot_ES <- ggplot(data=DID.ES.dat %>% dplyr::filter(Season != 2020 & Season <= Interv), 
                     mapping=aes(x=Season, y=get(paste0(statval,"_ES")), 
                                 color=Type, shape=Type)) +
     geom_point(size=2.8) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     geom_hline(yintercept=0, color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
-    # scale_color_brewer(name="Analysis Type",
-    #                    type="qual", palette="Dark2",
-    #                    direction=-1,
-    #                    breaks=c("Placebo","Intervention")) +
     scale_color_manual(name="Analysis Type",
                        values=brewer.pal(3,"Dark2")[c(3,1)],
                        breaks=c("Intervention","Placebo")) +
@@ -59,53 +51,14 @@ plot_DIDs <- function(statval, tagvals=NULL) {
          title=paste0(tagvals[2],"DID analysis for ",statval,", consecutive seasons"))
   return(list(Trend=plot_trend, 
               ES=plot_ES))
-    
+  
 }
 
-plot_BABIP <- plot_DIDs("BABIP", tagvals=c("A. ","C. "))
-plot_OBP <- plot_DIDs("OBP", tagvals=c("B. ","D. "))
+## SC Analysis Plots:
 
-ggsave(filename=paste0(outdir,"Figure1.png"),
-       plot = plot_BABIP[["Trend"]] + theme(legend.position="inside",
-                                            legend.position.inside=c(.184,.215),
-                                            legend.background=element_rect(fill="white",
-                                                                           color="grey50"),
-                                            legend.title=element_text(size=rel(1.2)),
-                                            legend.text=element_text(size=rel(1.2))) +
-         plot_OBP[["Trend"]] + theme(legend.position="none") +
-         plot_BABIP[["ES"]] + theme(legend.position="inside",
-                                    legend.position.inside=c(.126,.815),
-                                    legend.background=element_rect(fill="white",
-                                                                   color="grey50"),
-                                    legend.title=element_text(size=rel(1.2)),
-                                    legend.text=element_text(size=rel(1.2))) +
-         plot_OBP[["ES"]] + theme(legend.position="none") +
-         plot_layout(ncol=2, nrow=2, byrow=TRUE, guides="keep"),
-         # plot_layout(ncol=2, nrow=2, byrow=TRUE, guides="collect") &
-         # theme(legend.position="bottom"),
-       dpi=600, width=13, height=8, units="in")
- 
-### 2x2 tables for key outcomes:
-Tbl1 <- TwoByTwo %>% dplyr::select(c("Batter",starts_with("BABIP"),starts_with("OBP")))
-write.csv(x=Tbl1 %>%
-            dplyr::mutate(across(.cols=-c("Batter"),
-                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(outdir,"Table1.csv"),
-          row.names=FALSE)
-
-## Analysis 2: Player-Specific
-load(file="int/Player_pool_data.Rda")
-load(file="res/SC-Results-Complete.Rda")
-Target <- "Corey Seager"
-
-load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-Weights_Pred %>% dplyr::arrange(desc(OPS_weight))
-Weights_Pred %>% dplyr::arrange(desc(wOBA_weight))
-Weights_Pred %>% dplyr::arrange(desc(OBP_weight))
-SCs %>% dplyr::filter(Intervention)
-
-plot_Comp <- function(statval, display_name, tagval=NULL) {
-  SCs_targ <- SCs_Results %>% 
+### Comparison Plots (Synthetic & Observed Outcomes for a player):
+plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
+  SCs_targ <- SC.dat %>% 
     dplyr::filter(Outcome==statval & Name_Disp==display_name) %>%
     pivot_longer(cols=c("Observed","Synthetic"),
                  names_to="Result", values_to="Value")
@@ -133,41 +86,9 @@ plot_Comp <- function(statval, display_name, tagval=NULL) {
     labs(title=paste0(tagval,"Synthetic and Observed ",statval," for ",display_name))
 }
 
-ggsave(filename=paste0(outdir,"Figure2.png"),
-       plot=plot_Comp("OBP", Target, "A. ") +
-         plot_Comp("OPS", Target, "B. ") +
-         plot_Comp("wOBA", Target, "C. ") +
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.background=element_rect(fill="white",
-                                              color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=13, height=8, units="in")
-
-
-## Analysis 3: Full SC Results:
-Tbl2 <- MSPEs_Results %>% left_join(Player_pool %>% dplyr::select(Player_ID,Shift_Perc_2022)) %>%
-  dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
-  dplyr::select(Name_Disp, `Shift Rate (2022)`, Outcome, Diff_2023, PVal) %>%
-  dplyr::rename(Player=Name_Disp, Estimate=Diff_2023, p=PVal) %>%
-  pivot_wider(names_from=Outcome, values_from=c("Estimate","p"), names_vary="slowest") %>%
-  dplyr::arrange(desc(`Shift Rate (2022)`))
-  
-write.csv(x=Tbl2 %>%
-            dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
-                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(outdir,"Table2.csv"),
-          row.names=FALSE)
-
-SCs_Results %>% dplyr::filter(Season==Interv) %>%
-  group_by(Outcome,Placebo_Unit) %>%
-  dplyr::summarize(Mean=mean(Diff), Median=median(Diff),
-                   Prop.Pos=mean(Diff > 0))
-
-plot_SC_ests <- function(statval, tagval=NULL) {
-  ggplot(data=SCs_Results %>% dplyr::filter(Outcome==statval),
+### SC Estimates/Differences Plots (Synthetic-Observed for all players):
+plot_SC_ests <- function(statval, SC.dat, tagval=NULL) {
+  ggplot(data=SC.dat %>% dplyr::filter(Outcome==statval),
          mapping=aes(x=Season, y=Diff, group=Player_ID,
                      color=Placebo_Unit, alpha=Placebo_Unit,
                      linetype=Placebo_Unit)) +
@@ -197,16 +118,3 @@ plot_SC_ests <- function(statval, tagval=NULL) {
     theme_bw() + theme(legend.position="bottom") +
     labs(title=paste0(tagval,"SCM estimates for ",statval," for all included players"))
 }
-
-ggsave(filename=paste0(outdir,"Figure3.png"),
-       plot=plot_SC_ests("OBP", "A. ") + 
-         plot_SC_ests("OPS", "B. ") + 
-         plot_SC_ests("wOBA", "C. ") + 
-         guide_area() +
-       plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-       theme(legend.position="inside",
-             legend.background=element_rect(fill="white", color="grey50"),
-             legend.text=element_text(size=rel(1.2)),
-             legend.title=element_text(size=rel(1.2)),
-             legend.direction="vertical"),
-       dpi=600, width=13, height=8, units="in")
