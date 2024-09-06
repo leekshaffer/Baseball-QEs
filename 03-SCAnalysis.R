@@ -72,7 +72,7 @@ B.250_pool <- B.250 %>%
   
 Player_pool_avg <- B.250_pool %>%
   group_by(Shift_Cat_2022,Season) %>%
-  dplyr::summarize(across(all_of(BStats$stat), mean, .names="{col}_Mean")) %>%
+  dplyr::summarize(across(all_of(BStats$stat), mean, .names="{col}")) %>%
   ungroup()
 
 ## Run analyses for all intervention players:

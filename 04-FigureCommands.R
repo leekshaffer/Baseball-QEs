@@ -56,6 +56,75 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat, tagvals=NULL) {
 
 ## SC Analysis Plots:
 
+### Overall Outcome Trajectory Plots by Player:
+plot_Traj <- function(statval, Traj.dat, 
+                      CatVar, CatName, CatBreaks, CatLabs,
+                      CatCols, CatLTY, CatAlpha,
+                      Type="Average", Fixed=TRUE, 
+                      Target=NULL, tagval=NULL) {
+  ## Type can be "Average", "All", or "Target"
+  if (Type=="Average") {
+    plot <- ggplot(data=Traj.dat,
+                   mapping=aes(x=Season,
+                               y=get(statval),
+                               group=get(CatVar),
+                               alpha=get(CatVar),
+                               color=get(CatVar),
+                               linetype=get(CatVar)))
+    LW <- 1.2
+  } else {
+    plot <- ggplot(data=Traj.dat,
+                   mapping=aes(x=Season,
+                               y=get(statval),
+                               group=Player_ID,
+                               alpha=get(CatVar),
+                               color=get(CatVar),
+                               linetype=get(CatVar)))
+    LW <- 1
+  }
+  plot <- plot + geom_line(linewidth=LW) + geom_point() +
+    scale_x_continuous(name="Season",
+                       breaks=2015:2023,
+                       minor_breaks=NULL)
+  if (Fixed) {
+    plot <- plot +
+      scale_y_continuous(name=paste0("Average player ",statval),
+                         limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+      coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
+      
+  } else {
+    plot <- plot +
+      scale_y_continuous(name=paste0("Average player ",statval))
+  }
+    plot <- plot + 
+      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+      scale_color_manual(name=CatName,
+                         values=CatCols,
+                         breaks=CatBreaks,
+                         labels=CatLabs) +
+      scale_alpha_manual(name=CatName,
+                         values=CatAlpha,
+                         breaks=CatBreaks,
+                         labels=CatLabs) +
+      scale_linetype_manual(name=CatName,
+                            values=CatLTY,
+                            breaks=CatBreaks,
+                            labels=CatLabs) +
+      theme_bw() +
+      theme(legend.position="bottom")
+    if (Type=="Average") {
+      plot <- plot +
+        labs(title=paste0(tagval,"Average player ", statval," by category and season, min. 250 PA"))
+    } else if (Type=="Target") {
+      plot <- plot + 
+        labs(title=paste0(tagval, statval," by player and season for ",Target," and controls"))
+    } else {
+      plot <- plot +
+        labs(title=paste0(tagval, statval," by player and season, min. 250 PA"))
+    }
+    return(plot)
+}
+
 ### Comparison Plots (Synthetic & Observed Outcomes for a player):
 plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
   SCs_targ <- SC.dat %>% 
@@ -86,35 +155,51 @@ plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
     labs(title=paste0(tagval,"Synthetic and Observed ",statval," for ",display_name))
 }
 
-### SC Estimates/Differences Plots (Synthetic-Observed for all players):
-plot_SC_ests <- function(statval, SC.dat, tagval=NULL) {
+### SC Estimates/Differences Plots (Synthetic-Observed):
+plot_SC_ests <- function(statval, SC.dat, 
+                         LegName, LegVar, LegLabs, LegBreaks,
+                         LegCols, LegAlpha, LegLTY, title,
+                         LW=1,
+                         tagval=NULL) {
   ggplot(data=SC.dat %>% dplyr::filter(Outcome==statval),
          mapping=aes(x=Season, y=Diff, group=Player_ID,
-                     color=Placebo_Unit, alpha=Placebo_Unit,
-                     linetype=Placebo_Unit)) +
-    geom_line() +
+                     color=get(LegVar), alpha=get(LegVar),
+                     linetype=get(LegVar))) +
+    geom_line(linewidth=LW) +
     scale_x_continuous(name="Season",
                        breaks=2015:2023, minor_breaks=NULL) +
     scale_y_continuous(name="Difference, Synthetic - Observed",
                        limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
-    scale_color_manual(name="Analysis Type",
-                       breaks=c(FALSE,TRUE),
-                       labels=c("Target Players (2022 Shift Rate \U2265 80%)",
-                                "Placebo Players (2022 Shift Rate \U2264 20%)"),
-                       values=brewer.pal(3, "Dark2")[c(3,1)]) +
-    scale_alpha_manual(name="Analysis Type",
-                       breaks=c(FALSE,TRUE),
-                       labels=c("Target Players (2022 Shift Rate \U2265 80%)",
-                                "Placebo Players (2022 Shift Rate \U2264 20%)"),
-                       values=c(1,0.5)) +
-    scale_linetype_manual(name="Analysis Type",
-                          breaks=c(FALSE,TRUE),
-                          labels=c("Target Players (2022 Shift Rate \U2265 80%)",
-                                   "Placebo Players (2022 Shift Rate \U2264 20%)"),
-                          values=c("solid","longdash")) +
+    scale_color_manual(name=LegName,
+                       breaks=LegBreaks,
+                       labels=LegLabs,
+                       values=LegCols) +
+    scale_alpha_manual(name=LegName,
+                       breaks=LegBreaks,
+                       labels=LegLabs,
+                       values=LegAlpha) +
+    scale_linetype_manual(name=LegName,
+                          breaks=LegBreaks,
+                          labels=LegLabs,
+                          values=LegLTY) +
     geom_vline(xintercept=Interv-0.5,
                color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
-    labs(title=paste0(tagval,"SCM estimates for ",statval," for all included players"))
+    labs(title=paste0(tagval,title))
+}
+
+plot_SC_ests_all <- function(statval, SC.dat, tagval=NULL) {
+  plot_SC_ests(statval, SC.dat,
+               LegName="Analysis Type",
+               LegVar="Placebo_Unit",
+               LegLabs=c("Target Players (2022 Shift Rate \U2265 80%)",
+                         "Placebo Players (2022 Shift Rate \U2264 20%)"), 
+               LegBreaks=c(FALSE,TRUE),
+               LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+               LegAlpha=c(1,0.5), 
+               LegLTY=c("solid","longdash"), 
+               title=paste0("SCM estimates for ",statval," for all included players"),
+               LW=1,
+               tagval)
 }
