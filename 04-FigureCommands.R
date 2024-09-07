@@ -7,7 +7,8 @@ Interv <- 2023
 
 ## DID Analysis Plots:
 
-plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat, tagvals=NULL) {
+plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat, 
+                      ES.lim = c(-0.01, 0.01), tagvals=NULL) {
   plot_trend <- ggplot(data=DID.CF.dat %>% dplyr::filter(Season != 2020 & Season <= Interv),
                        mapping=aes(x=Season, y=get(statval), 
                                    group=Batter, color=Batter, linetype=Batter,
@@ -46,7 +47,7 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat, tagvals=NULL) {
     scale_x_continuous(name="Season",
                        breaks=2015:2023,
                        minor_breaks=NULL) +
-    coord_cartesian(ylim=c(-.01,.01)) +
+    coord_cartesian(ylim=ES.lim) +
     labs(y=paste0("DID Estimate for ",statval),
          title=paste0(tagvals[2],"DID analysis for ",statval,", consecutive seasons"))
   return(list(Trend=plot_trend, 
