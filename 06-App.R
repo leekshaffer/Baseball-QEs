@@ -119,12 +119,12 @@ ui <- fluidPage(
                        href="https://www.fangraphs.com/leaders/splits-leaderboards")
                ),
                accordion(
-                 open = c("Table"),
-                 accordion_panel("Table",
+                 open = c("Table 1: Two-By-Two DID Results"),
+                 accordion_panel("Table 1: Two-By-Two DID Results",
                                  DT::dataTableOutput("DIDtbl1")),
-                 accordion_panel("Trend Plot",
+                 accordion_panel("Plot 1: Outcome Value Trends By Player",
                                  plotOutput("DIDplot1", width="95%")),
-                 accordion_panel("Event Study Plot",
+                 accordion_panel("Plot 2: DID Event Study Estimates",
                                  plotOutput("DIDplot2", width="95%"))
                )
              )
@@ -149,18 +149,18 @@ ui <- fluidPage(
                ),
                
                accordion(
-                 open=c("Shift Data Link for 2022", "SCM Estimates Table"),
+                 open=c("Shift Data Link for 2022", "Table 1: SCM Estimates"),
                  accordion_panel(
                    "Shift Data Link for 2022",
                    uiOutput("AllURLs")),
                  accordion_panel(
-                   "SCM Estimates Table",
+                   "Table 1: SCM Estimates",
                    DT::dataTableOutput("Alltbl1")),
                  accordion_panel(
-                   "Plot: Outcome Value Trajectories",
+                   "Plot 1: Outcome Value Trajectories",
                    plotOutput("Allplot1", width="95%")),
                  accordion_panel(
-                   "Plot: SCM Estimates",
+                   "Plot 2: SCM Estimates",
                    plotOutput("Allplot2", width="95%"))
              )
     )),
@@ -187,15 +187,15 @@ ui <- fluidPage(
                ),
                
                accordion(
-                 open=c("Useful Player Links", "SCM Estimates Table"),
+                 open=c("Useful Player Links", "Table 1: SCM Estimates"),
                  accordion_panel(
                    "Useful Player Links",
                    uiOutput("URLs")),
                  accordion_panel(
-                   "SCM Estimates Table",
+                   "Table 1: SCM Estimates",
                    DT::dataTableOutput("tbl1")),
                  accordion_panel(
-                   "SCM Weights Table",
+                   "Table 2: SCM Weights Table",
                    DT::dataTableOutput("tbl2")),
                  accordion_panel(
                    title=textOutput("plot1_title_out"),
@@ -230,7 +230,7 @@ server <- function(input, output) {
     if (input$InStat==All_token_SC) {
       return("Plot 2: SCM Estimates for OPS")
     } else {
-      return("Plot 2: Synthetic and Observed Values")
+      return("Plot 2: Synthetic and Observed Outcomes")
     }
   })
   output$plot2_title_out <- renderText(plot2_title())
@@ -279,7 +279,7 @@ server <- function(input, output) {
   output$tbl2 <- DT::renderDataTable({
     DT::datatable(wts_tbl(input$InName, input$InStat), 
                   options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
-                                 pageLength = -1))
+                                 pageLength = 3))
   })
   
   output$plot1 <- renderPlot({
@@ -396,7 +396,8 @@ server <- function(input, output) {
                   tagval=NULL) + 
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
+                legend.direction="horizontal") +
+          geom_point(size=3)
     }
   })
   
@@ -480,7 +481,8 @@ server <- function(input, output) {
         theme(legend.background=element_rect(fill="white",
                                              color="grey50"),
               legend.position="bottom",
-              legend.text=element_text(size=rel(1.1)))
+              legend.text=element_text(size=rel(1.1))) +
+        geom_point(size=3)
     }
   })
   
@@ -492,7 +494,8 @@ server <- function(input, output) {
         theme(legend.background=element_rect(fill="white",
                                              color="grey50"),
               legend.position="bottom",
-              legend.text=element_text(size=rel(1.2)))
+              legend.text=element_text(size=rel(1.2))) +
+        geom_point(size=4)
     }
   })
 }
