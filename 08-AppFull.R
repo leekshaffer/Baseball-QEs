@@ -201,9 +201,6 @@ server <- function(input, output) {
   
   output$tbl2 <- DT::renderDataTable({
     if (input$InName==All_token_SC) {
-      DT::datatable(DID_tbl(input$InStat),
-                    options = list(paging = FALSE,
-                                   searching = FALSE))
     } else {
       DT::datatable(wts_tbl(input$InName, input$InStat), 
                     options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
