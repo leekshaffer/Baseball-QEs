@@ -1,6 +1,7 @@
 library(shiny)
 library(tidyverse)
 library(DT)
+library(bslib)
 
 ## Data needed to run:
 Interv <- 2023
@@ -107,36 +108,71 @@ ui <- fluidPage(
   tabsetPanel(
     id = "tabset",
     tabPanel("Analysis 1 (DID)", 
-             titlePanel("Effect of the Shift Ban on Left-Handed MLB Batters, 2023"),
-             sidebarLayout(
-               sidebarPanel(
-                 selectInput("DIDInStat", label = h3("Choose Outcome"),
+             page_sidebar(
+               title = "Effect of the Shift Ban on Left-Handed MLB Batters, 2023",
+               sidebar=sidebar(
+                 selectInput("DIDInStat", label = h4("Choose Outcome"),
                              choices = as.list(c(All_token_DID,BStats$stat)),
                              selected = All_token_DID),
-                 # h4("Created by Lee Kennedy-Shaffer, 2024"),
-                 # h5("Code Available:"),
-                 # h6("https://github.com/leekshaffer/baseball-qes"),
-                 h5("Data Sources:"),
-                 a("FanGraphs Splits Leaderboard",
-                   href="https://www.fangraphs.com/leaders/splits-leaderboards")
+                     h5("Data Sources:"),
+                     a("FanGraphs Splits Leaderboard",
+                       href="https://www.fangraphs.com/leaders/splits-leaderboards")
                ),
-               mainPanel(
-                 tabPanel(title="DID Effect Estimate(s)", 
-                          DT::dataTableOutput('DIDtbl1')),
-                 plotOutput("DIDplot1", width="95%"),
-                 plotOutput("DIDplot2", width="95%")
+               accordion(
+                 open = c("Table"),
+                 accordion_panel("Table",
+                                 DT::dataTableOutput("DIDtbl1")),
+                 accordion_panel("Trend Plot",
+                                 plotOutput("DIDplot1", width="95%")),
+                 accordion_panel("Event Study Plot",
+                                 plotOutput("DIDplot2", width="95%"))
                )
              )
     ),
     
-    tabPanel("Analysis 2 (SCM)",
-             titlePanel("Effect of the Shift Ban on High-Shift MLB Players, 2023"),
-             sidebarLayout(
-               sidebarPanel(
-                 selectInput("InName", label = h3("Choose Player"),
-                             choices = as.list(c(All_token_SC,Player_Choices)),
+    tabPanel("Analysis 2 (SCM): All Players",
+             page_sidebar(
+               title = "Effect of the Shift Ban on High-Shift MLB Players, 2023",
+               sidebar=sidebar(
+                 selectInput("SCAllInStat", label = h4("Choose Outcome"),
+                             choices = as.list(c(BStats_Use$stat)),
+                             selected = "OBP"),
+                 # h4("Created by Lee Kennedy-Shaffer, 2024"),
+                 # h5("Code Available:"),
+                 # h6("https://github.com/leekshaffer/baseball-qes"),
+                 h5("Data Sources:"),
+                 a("Baseball Savant Custom Leaderboard",
+                   href="https://baseballsavant.mlb.com/leaderboard/custom"),
+                 br(),
+                 a("Baseball Savant Batter Positioning Leaderboard",
+                   href="https://baseballsavant.mlb.com/visuals/batter-positioning")
+               ),
+               
+               accordion(
+                 open=c("Shift Data Link for 2022", "SCM Estimates Table"),
+                 accordion_panel(
+                   "Shift Data Link for 2022",
+                   uiOutput("AllURLs")),
+                 accordion_panel(
+                   "SCM Estimates Table",
+                   DT::dataTableOutput("Alltbl1")),
+                 accordion_panel(
+                   "Plot: Outcome Value Trajectories",
+                   plotOutput("Allplot1", width="95%")),
+                 accordion_panel(
+                   "Plot: SCM Estimates",
+                   plotOutput("Allplot2", width="95%"))
+             )
+    )),
+    
+    tabPanel("Analysis 2 (SCM): By Player",
+             page_sidebar(
+               title = "Effect of the Shift Ban on High-Shift MLB Players, 2023",
+               sidebar=sidebar(
+                 selectInput("InName", label = h4("Choose Player"),
+                             choices = as.list(c(Player_Choices)),
                              selected = "Corey Seager"),
-                 selectInput("InStat", label = h3("Choose Outcome"),
+                 selectInput("InStat", label = h4("Choose Outcome"),
                              choices = as.list(c(All_token_SC,BStats_Use$stat)),
                              selected = All_token_SC),
                  # h4("Created by Lee Kennedy-Shaffer, 2024"),
@@ -149,34 +185,67 @@ ui <- fluidPage(
                  a("Baseball Savant Batter Positioning Leaderboard",
                    href="https://baseballsavant.mlb.com/visuals/batter-positioning")
                ),
-               mainPanel(
-                 uiOutput("URLs"),
-                 tabPanel(title="Effect Estimate(s)",
-                          DT::dataTableOutput('tbl1')),
-                 tabPanel(title="SCM Weights",
-                          DT::dataTableOutput('tbl2')),
-                 plotOutput("plot1", width="95%"),
-                 plotOutput("plot2", width="95%"),
-                 plotOutput("plot3", width="95%")
+               
+               accordion(
+                 open=c("Useful Player Links", "SCM Estimates Table"),
+                 accordion_panel(
+                   "Useful Player Links",
+                   uiOutput("URLs")),
+                 accordion_panel(
+                   "SCM Estimates Table",
+                   DT::dataTableOutput("tbl1")),
+                 accordion_panel(
+                   "SCM Weights Table",
+                   DT::dataTableOutput("tbl2")),
+                 accordion_panel(
+                   title=textOutput("plot1_title_out"),
+                   plotOutput("plot1", width="95%"),
+                   value="plot1"),
+                 accordion_panel(
+                   title=textOutput("plot2_title_out"),
+                   plotOutput("plot2", width="95%"),
+                   value="plot2"),
+                 accordion_panel(
+                   title=textOutput("plot3_title_out"),
+                   plotOutput("plot3", width="95%"),
+                   value="plot3")
                )
-             ))
+             )
+    )
+    )
   )
-)
 
 ## Server:
 server <- function(input, output) {
-  output$URLs <- renderUI({
-    if (input$InName==All_token_SC) {
-      tagList(
-        h4("For 2022 shift rates, see:"),
-        a("Batter Positioning Leaderboard, 2022", 
-          href=paste0("https://baseballsavant.mlb.com/visuals/batter-positioning?",
-                      "playerId=545361&teamId=&opponent=&firstBase=0",
-                      "&shift=1&season=2022&attempts=250&batSide=R")))
+  ## SCM outputs:
+  plot1_title <- reactive({
+    if (input$InStat==All_token_SC) {
+      return("Plot 1: SCM Estimates for OBP")
     } else {
+      return("Plot 1: Outcome Value Trajectories")
+    }
+  })
+  output$plot1_title_out <- renderText(plot1_title())
+  plot2_title <- reactive({
+    if (input$InStat==All_token_SC) {
+      return("Plot 2: SCM Estimates for OPS")
+    } else {
+      return("Plot 2: Synthetic and Observed Values")
+    }
+  })
+  output$plot2_title_out <- renderText(plot2_title())
+  plot3_title <- reactive({
+    if (input$InStat==All_token_SC) {
+      return("Plot 3: SCM Estimates for wOBA")
+    } else {
+      return("Plot 3: SCM Estimates")
+    }
+  })
+  output$plot3_title_out <- renderText(plot3_title())
+  
+  output$URLs <- renderUI({
       Info <- player_info(input$InName)
       tagList(
-        h4(paste0("Useful links for ",input$InName),":"),
         a("Batter Positioning Leaderboard, 2022",
           href=Info$MLB_BPL_URL),
         br(),
@@ -185,37 +254,36 @@ server <- function(input, output) {
         br(),
         a("Baseball Reference Player Page",
           href=Info$BR_URL))
-    }
   })
+  
+  output$AllURLs <- renderUI({
+    tagList(
+      a("Batter Positioning Leaderboard, 2022", 
+        href=paste0("https://baseballsavant.mlb.com/visuals/batter-positioning?",
+                    "playerId=545361&teamId=&opponent=&firstBase=0",
+                    "&shift=1&season=2022&attempts=250&batSide=R")))
+  })
+  
   output$tbl1 <- DT::renderDataTable({
-    if (input$InName==All_token_SC) {
-      DT::datatable(ests_tbl(input$InName, input$InStat), 
-                    options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
-                                   pageLength = 6))
-    } else {
-      DT::datatable(ests_tbl(input$InName, input$InStat), 
-                    options = list(paging = FALSE,
-                                   searching = FALSE))
-    }
+    DT::datatable(ests_tbl(input$InName, input$InStat), 
+                  options = list(paging = FALSE,
+                                 searching = FALSE))
+  })
+  
+  output$Alltbl1 <- DT::renderDataTable({
+    DT::datatable(ests_tbl(All_token_SC, input$SCAllInStat), 
+                  options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
+                                 pageLength = 9))
   })
   
   output$tbl2 <- DT::renderDataTable({
-    if (input$InName==All_token_SC) {
-    } else {
-      DT::datatable(wts_tbl(input$InName, input$InStat), 
-                    options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
-                                   pageLength = 3))
-    }
+    DT::datatable(wts_tbl(input$InName, input$InStat), 
+                  options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
+                                 pageLength = -1))
   })
   
   output$plot1 <- renderPlot({
     if (input$InStat==All_token_SC) {
-      if (input$InName==All_token_SC) {
-        plot_SC_ests_all(BStats_Use$stat[1], SCs_Results) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-      } else {
         Target <- input$InName
         load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
         SC_data <- SCs_Results %>% 
@@ -238,25 +306,7 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-      }
     } else {
-      if (input$InName==All_token_SC) {
-        plot_Traj(statval=input$InStat,
-                  Traj.dat=B.250_pool %>% dplyr::filter(Shift_Cat_2022 != "Medium"),
-                  CatVar="Shift_Cat_2022",
-                  CatName=NULL,
-                  CatBreaks=c("High","Low"),
-                  CatLabs=c("Target Players (2022 Shift Rate \U2265 80%)",
-                            "Control Players (2022 Shift Rate \U2264 20%)"),
-                  CatCols=brewer.pal(3, "Dark2")[c(3,1)],
-                  CatLTY=c("solid","longdash"),
-                  CatAlpha=c(1,.4),
-                  Type="All",
-                  Fixed=TRUE) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-      } else {
         Target <- input$InName
         load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
         SC_data <- SCs_Results %>% 
@@ -282,18 +332,36 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-      }
+    }
+  })
+  
+  output$Allplot1 <- renderPlot({
+    if (input$SCAllInStat==All_token_SC) {
+        plot_SC_ests_all(BStats_Use$stat[1], SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+    } else {
+        plot_Traj(statval=input$SCAllInStat,
+                  Traj.dat=B.250_pool %>% dplyr::filter(Shift_Cat_2022 != "Medium"),
+                  CatVar="Shift_Cat_2022",
+                  CatName=NULL,
+                  CatBreaks=c("High","Low"),
+                  CatLabs=c("Target Players (2022 Shift Rate \U2265 80%)",
+                            "Control Players (2022 Shift Rate \U2264 20%)"),
+                  CatCols=brewer.pal(3, "Dark2")[c(3,1)],
+                  CatLTY=c("solid","longdash"),
+                  CatAlpha=c(1,.4),
+                  Type="All",
+                  Fixed=TRUE) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
     }
   })
   
   output$plot2 <- renderPlot({
     if (input$InStat==All_token_SC) {
-      if (input$InName==All_token_SC) {
-        plot_SC_ests_all(BStats_Use$stat[2], SCs_Results) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-      } else {
         Target <- input$InName
         load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
         SC_data <- SCs_Results %>% 
@@ -316,14 +384,7 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-      }
     } else {
-      if (input$InName==All_token_SC) {
-        plot_SC_ests_all(input$InStat, SCs_Results) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-      } else {
         Target <- input$InName
         load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
         SC_data <- SCs_Results %>% 
@@ -336,18 +397,25 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-      }
+    }
+  })
+  
+  output$Allplot2 <- renderPlot({
+    if (input$SCAllInStat==All_token_SC) {
+        plot_SC_ests_all(BStats_Use$stat[2], SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
+    } else {
+        plot_SC_ests_all(input$SCAllInStat, SCs_Results) + 
+          theme(legend.position="bottom",
+                legend.background=element_rect(fill="white", color="grey50"),
+                legend.direction="horizontal")
     }
   })
   
   output$plot3 <- renderPlot({
     if (input$InStat==All_token_SC) {
-      if (input$InName==All_token_SC) {
-        plot_SC_ests_all(BStats_Use$stat[3], SCs_Results) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-      } else {
         Target <- input$InName
         load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
         SC_data <- SCs_Results %>% 
@@ -370,10 +438,7 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-      }
     } else {
-      if (input$InName==All_token_SC) {
-      } else {
         Target <- input$InName
         load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
         SC_data <- SCs_Results %>% 
@@ -396,7 +461,6 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-      }
     }
   })
   
