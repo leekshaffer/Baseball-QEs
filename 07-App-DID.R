@@ -6,12 +6,12 @@ library(DT)
 Interv <- 2023
 load(file="int/DID_data.Rda")
 source("./04-FigureCommands.R", local=TRUE)
-All_token <- "-All (Table Only)-"
+All_token_DID <- "-All (Table Only)-"
 BStats <- tibble(stat=colnames(FG.dat.withCF %>% select(-c("Season","Batter"))))
 
 ## Data functions for player & outcome combination:
 DID_tbl <- function(statval) {
-  if (statval==All_token) {
+  if (statval==All_token_DID) {
     Tbl <- TwoByTwo %>% pivot_longer(cols=-c("Batter"), names_to=c("Outcome","Year"), 
                                      names_sep="_", values_to="Value") %>% 
       pivot_wider(id_cols=c("Outcome","Batter"), names_from="Year", values_from="Value") %>%
@@ -41,8 +41,8 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       selectInput("InStat", label = h3("Choose Outcome"),
-                  choices = as.list(c(All_token,BStats$stat)),
-                  selected = All_token),
+                  choices = as.list(c(All_token_DID,BStats$stat)),
+                  selected = All_token_DID),
       # h4("Created by Lee Kennedy-Shaffer, 2024"),
       # h5("Code Available:"),
       # h6("https://github.com/leekshaffer/baseball-qes"),
@@ -73,7 +73,7 @@ server <- function(input, output) {
   })
   
   output$plot1 <- renderPlot({
-    if (input$InStat==All_token) {
+    if (input$InStat==All_token_DID) {
     } else {
       plot_DIDs(input$InStat, DID.CF.dat=FG.dat.withCF, DID.ES.dat=FullES,
                 ES.lim = c(-0.025, 0.025))[["Trend"]] +
@@ -85,7 +85,7 @@ server <- function(input, output) {
   })
   
   output$plot2 <- renderPlot({
-    if (input$InStat==All_token) {
+    if (input$InStat==All_token_DID) {
     } else {
       plot_DIDs(input$InStat, DID.CF.dat=FG.dat.withCF, DID.ES.dat=FullES,
                 ES.lim = c(-0.025, 0.025))[["ES"]] +
