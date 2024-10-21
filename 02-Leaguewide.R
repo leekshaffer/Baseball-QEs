@@ -4,20 +4,21 @@
 
 require(tidyverse)
 load(file="int/FG_data.Rda")
-Interv <- 2023
+Interv <- 2023:2024
 
 ## Hitting stats to consider:
 BStats <- c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS","wOBA")
 
-FG.dat.withCF <- FG.dat.empty %>% dplyr::filter(Season != 2020 & Season <= Interv) %>%
+FG.dat.withCF <- FG.dat.empty %>% dplyr::filter(Season != 2020 & Season <= max(Interv)) %>%
   dplyr::select(all_of(c("Season","Batter",BStats)))
+FG.dat.withCF <- FG.dat.withCF %>%
+  bind_rows(FG.dat.withCF %>% dplyr::filter(Season < min(Interv), Batter=="LHB") %>% 
+              dplyr::mutate(Batter="Counterfactual LHB"))
 for (year in Interv) {
   FG.dat.withCF <- FG.dat.withCF %>%
-    bind_rows(FG.dat.withCF %>% dplyr::filter(Season < Interv, Batter=="LHB") %>% 
-                dplyr::mutate(Batter="Counterfactual LHB"),
-                bind_cols(Season=year,
+    bind_rows(bind_cols(Season=year,
                        Batter="Counterfactual LHB",
-                       FG.dat.withCF %>% dplyr::filter(Season==year-1, Batter=="LHB") %>% dplyr::select(all_of(BStats)) + 
+                       FG.dat.withCF %>% dplyr::filter(Season==year-1, Batter=="Counterfactual LHB") %>% dplyr::select(all_of(BStats)) + 
                          FG.dat.withCF %>% dplyr::filter(Season==year, Batter=="RHB") %>% dplyr::select(all_of(BStats)) - 
                          FG.dat.withCF %>% dplyr::filter(Season==year-1, Batter=="RHB") %>% dplyr::select(all_of(BStats))))
 }
@@ -47,7 +48,7 @@ for (val in BStats) {
   FullES[paste(val,"Diff",sep="_")] <- FullES[val]-FullES[paste(val,"lag",sep="_")]
 }
 FullES <- FullES %>%
-  dplyr::mutate(Type=if_else(Season >= Interv, "Intervention", "Placebo")) %>%
+  dplyr::mutate(Type=if_else(Season %in% Interv, "Intervention", "Placebo")) %>%
   dplyr::select(Season,Type,Batter,ends_with("Diff")) %>%
   pivot_wider(id_cols=c(Season,Type), names_from=Batter, values_from=ends_with("Diff"))
 for (val in BStats) {

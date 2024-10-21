@@ -9,7 +9,7 @@ Interv <- 2023
 
 plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat, 
                       ES.lim = c(-0.01, 0.01), tagvals=NULL) {
-  plot_trend <- ggplot(data=DID.CF.dat %>% dplyr::filter(Season != 2020 & Season <= Interv),
+  plot_trend <- ggplot(data=DID.CF.dat %>% dplyr::filter(Season != 2020),
                        mapping=aes(x=Season, y=get(statval), 
                                    group=Batter, color=Batter, linetype=Batter,
                                    shape=Batter)) +
@@ -25,13 +25,13 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
                        values=c(15,17,15),
                        breaks=c("LHB","RHB","Counterfactual LHB")) +
     scale_x_continuous(name="Season",
-                       breaks=2015:2023,
+                       breaks=2015:2024,
                        minor_breaks=NULL) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0(tagvals[1],"Trend in ",statval," by batter handedness, bases empty"),
          y=statval)
   
-  plot_ES <- ggplot(data=DID.ES.dat %>% dplyr::filter(Season != 2020 & Season <= Interv), 
+  plot_ES <- ggplot(data=DID.ES.dat %>% dplyr::filter(Season != 2020), 
                     mapping=aes(x=Season, y=get(paste0(statval,"_ES")), 
                                 color=Type, shape=Type)) +
     geom_point(size=2.8) +
@@ -45,7 +45,7 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
                        values=c(19,18),
                        breaks=c("Intervention","Placebo")) +
     scale_x_continuous(name="Season",
-                       breaks=2015:2023,
+                       breaks=2015:2024,
                        minor_breaks=NULL) +
     coord_cartesian(ylim=ES.lim) +
     labs(y=paste0("DID Estimate for ",statval),
@@ -85,7 +85,7 @@ plot_Traj <- function(statval, Traj.dat,
   }
   plot <- plot + geom_line(linewidth=LW) + geom_point() +
     scale_x_continuous(name="Season",
-                       breaks=2015:2023,
+                       breaks=2015:2024,
                        minor_breaks=NULL)
   if (Fixed) {
     plot <- plot +
@@ -147,7 +147,7 @@ plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
                        values=c(15,17),
                        breaks=c("Observed","Synthetic")) +
     scale_x_continuous(name="Season",
-                       breaks=2015:2023,
+                       breaks=2015:2024,
                        minor_breaks=NULL) +
     scale_y_continuous(name=statval,
                        limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
@@ -168,7 +168,7 @@ plot_SC_ests <- function(statval, SC.dat,
                      linetype=get(LegVar))) +
     geom_line(linewidth=LW) +
     scale_x_continuous(name="Season",
-                       breaks=2015:2023, minor_breaks=NULL) +
+                       breaks=2015:2024, minor_breaks=NULL) +
     scale_y_continuous(name="Difference, Synthetic - Observed",
                        limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +

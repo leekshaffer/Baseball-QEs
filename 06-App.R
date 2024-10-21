@@ -122,7 +122,7 @@ ui <- fluidPage(
                  open = c("Table 1: Two-By-Two DID Results"),
                  accordion_panel("Table 1: Two-By-Two DID Results",
                                  DT::dataTableOutput("DIDtbl1")),
-                 accordion_panel("Plot 1: Outcome Value Trends By Player",
+                 accordion_panel("Plot 1: Outcome Value Trends By Batter Handedness",
                                  plotOutput("DIDplot1", width="95%")),
                  accordion_panel("Plot 2: DID Event Study Estimates",
                                  plotOutput("DIDplot2", width="95%"))
