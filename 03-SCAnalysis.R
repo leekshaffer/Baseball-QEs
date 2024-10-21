@@ -77,7 +77,7 @@ Player_pool_2024 <- Players_seasons %>%
 
 ## League-wide averages by categories (across players w/ >= 250PA):
 B.250_pool <- B.250 %>%
-  left_join(Player_pool %>% dplyr::select(Name_Match,Shift_Cat_2022), 
+  left_join(Player_pool_2023 %>% dplyr::select(Name_Match,Shift_Cat_2022), 
                                  by=join_by(Name_Match)) %>%
   dplyr::filter(!is.na(Shift_Cat_2022), PA >= 250, Season != 2020)
   
@@ -86,12 +86,12 @@ Player_pool_avg <- B.250_pool %>%
   dplyr::summarize(across(all_of(BStats$stat), mean, .names="{col}")) %>%
   ungroup()
 
-## Run analyses for all intervention players:
-S_cols_check <- 15:19 ## Make sure these are in order of the variables
-SCs_Full <- NULL
-
-### Run the Synthetic Controls:
-Run_SC <- function(Pool,outname) { ## Function to run it for different pools of players
+### Run the Synthetic Controls for desired pool:
+Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19, 
+                   Res_Yrs=Interv, outname) { 
+  ## Function to run it for different pools of players
+  ## Make sure S_cols_all matches restrictions on pool and S_cols_check is in order of data set
+  SCs_Full <- NULL ## Clear any previous saved info
 for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
     ## Reset data sets:
     Weights_Unit <- NULL
@@ -356,6 +356,10 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% pull(Player_ID))  {
                              Placebo_Unit=TRUE))
 }
 
+### Save results data:
+save(list=c("SCs_Full", "SCs_Plac", "MSPEs_Full"),
+     file=paste0("res/",outname,"-Results-Intermediate.Rda"))
+
 
 ### Get summary results with placebo estimates:
 MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Outcome,Intervention) %>%
@@ -399,8 +403,9 @@ PVals <- function(row,PlacData,ColName) {
 }
 
 MSPEs_Results <- MSPEs_Res %>%
-  bind_cols(t(apply(MSPEs_Res, 1,
-                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_2023"))))
+  bind_cols(t(apply(MSPEs_Res %>% rowwise() %>%
+                      dplyr::mutate(Diff_Use=sum(c_across(paste0("Diff_",Res_Yrs)))), 1,
+                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_Use"))))
 
 ### Save results data:
 save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
@@ -409,8 +414,11 @@ save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
 return(SCs_Results)
 }
 
-SC_Res_23 <- Run_SC(Player_pool_2023, outname="SC-2023")
-SC_Res_23_24 <- Run_SC(Player_pool_2023_24, outname="SC-2023-24")
+## Run analyses for all intervention players:
+SC_Res_23 <- Run_SC(Player_pool_2023, S_cols_2023, 15:19, Res_Yrs=2023,
+                    outname="SC-2023")
+SC_Res_23_24 <- Run_SC(Player_pool_2023_24, S_cols_2023_24, 15:19, Res_Yrs=2023:2024,
+                       outname="SC-2023-24")
 
 
 ## Graphical Parameters:
@@ -431,6 +439,7 @@ BStats <- BStats %>%
   dplyr::select(stat,Use,min,max,diff_min,diff_max)
 
 ### Save internal data and parameters data:
-save(list=c("Player_pool_2023", "Player_pool_24o", "Player_pool_both", "B.250_pool", "Player_pool_avg", "BStats"),
+save(list=c("Player_pool_2023", "Player_pool_2024", "Player_pool_2023_24", 
+            "B.250_pool", "Player_pool_avg", "BStats"),
      file="int/Player_pool_data.Rda")
 
