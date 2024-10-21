@@ -59,16 +59,27 @@ Shift_summ <- Sav.Shifts %>% dplyr::filter(Season==2022) %>%
 ## Create player pool
 ### Has minimum season restrictions (now, 2021, 2022, and 2023 meet threshold)
 ### and creates display name
-S_cols_all <- 21:23 ## Make sure these are in order of the variables
-Player_pool <- Players_seasons %>% 
-  dplyr::filter(grepl(paste("S_",S_cols_all, sep="", collapse=".*"),Seasons_Dat)) %>%
+S_cols_2023 <- 21:23 ## Make sure these are in order of the variables
+Player_pool_2023 <- Players_seasons %>% 
+  dplyr::filter(grepl(paste("S_",S_cols_2023, sep="", collapse=".*"),Seasons_Dat)) %>%
   left_join(Shift_summ, by=join_by(Name_Match))
+
+S_cols_2023_24 <- 21:24 ## For requiring both 2023 and 2024 inclusion
+Player_pool_2023_24 <- Players_seasons %>%
+  dplyr::filter(grepl(paste("S_",S_cols_2023_24, sep="", collapse=".*"),Seasons_Dat)) %>%
+  left_join(Shift_summ, by=join_by(Name_Match))
+
+S_cols_2024 <- c(21,22,24) ## For requiring only 2024 but not 2023 for inclusion
+Player_pool_2024 <- Players_seasons %>%
+  dplyr::filter(grepl(paste("S_",S_cols_2024, sep="", collapse=".*"),Seasons_Dat)) %>%
+  left_join(Shift_summ, by=join_by(Name_Match))
+  
 
 ## League-wide averages by categories (across players w/ >= 250PA):
 B.250_pool <- B.250 %>%
   left_join(Player_pool %>% dplyr::select(Name_Match,Shift_Cat_2022), 
                                  by=join_by(Name_Match)) %>%
-  dplyr::filter(!is.na(Shift_Cat_2022), PA >= 250, !(Season %in% c(2020,2024)))
+  dplyr::filter(!is.na(Shift_Cat_2022), PA >= 250, Season != 2020)
   
 Player_pool_avg <- B.250_pool %>%
   group_by(Shift_Cat_2022,Season) %>%
@@ -80,7 +91,8 @@ S_cols_check <- 15:19 ## Make sure these are in order of the variables
 SCs_Full <- NULL
 
 ### Run the Synthetic Controls:
-for (ID in Player_pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
+Run_SC <- function(Pool,outname) { ## Function to run it for different pools of players
+for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
     ## Reset data sets:
     Weights_Unit <- NULL
     Weights_Pred <- NULL
@@ -89,19 +101,19 @@ for (ID in Player_pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player
     MSPE <- NULL
   
     ## Info on target player:
-    Row <- Player_pool[Player_pool$Player_ID==ID,]
+    Row <- Pool[Pool$Player_ID==ID,]
     Disp_name <- Row$Name_Disp
     print(paste0("Beginning analysis for ",Disp_name))
     ## Find their seasons with >= 250 PA:
     Seasons_check <- (S_cols_check)[unlist(Row[1,paste0("S_",S_cols_check)])]
     
     ## Get control players with at least those seasons >= 250 PA:
-    Player_donor <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
+    Player_donor <- Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
       dplyr::filter(grepl(paste("S_",Seasons_check, sep="", collapse=".*"),Seasons_Dat))
     N_donor <- dim(Player_donor)[1]
     while (N_donor < 10) { ## Cut off a year if less than 10 donor units
       Seasons_check <- Seasons_check[2:length(Seasons_check)]
-      Player_donor <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
+      Player_donor <- Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
         dplyr::filter(grepl(paste(Seasons_check, sep="", collapse=".*"),Seasons_Dat))
       N_donor <- dim(Player_donor)[1]
     }
@@ -178,7 +190,7 @@ for (ID in Player_pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player
       generate_control()
     
     WtPlot <- synth_player %>% plot_weights() + theme_bw()
-    ggsave(filename=paste0("figs/Players/",Disp_name,"/Weights-",statval,".png"),
+    ggsave(filename=paste0("figs/Players-",outname,"/",Disp_name,"/Weights-",statval,".png"),
            plot=WtPlot)
     
     ## Pull results and save:
@@ -214,7 +226,7 @@ for (ID in Player_pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player
                   values_from=MSPE) %>%
       dplyr::mutate(Ratio=Post/Pre)
     save(list=c("Weights_Unit","Weights_Pred","BalTbl","SCs","MSPEs"),
-         file=paste0("res/Players/Player-SC-",Disp_name,".Rda"))
+         file=paste0("res/Players-",outname,"/Player-SC-",Disp_name,".Rda"))
     SCs_Full <- SCs_Full %>% 
       bind_rows(SCs %>% mutate(Name=Row$Name, Name_Disp=Disp_name, Player_ID=ID))
 }
@@ -234,24 +246,24 @@ MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Interventio
 ### Placebo Testing:
 SCs_Plac <- NULL
 
-for (ID in Player_pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% pull(Player_ID))  {
+for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% pull(Player_ID))  {
   SCs <- NULL
   
   ## Info on target player:
-  Row <- Player_pool[Player_pool$Player_ID==ID,]
+  Row <- Pool[Pool$Player_ID==ID,]
   Disp_name <- Row$Name_Disp
   print(paste0("Beginning placebo test for ",Disp_name))
   ## Find their seasons with >= 250 PA:
   Seasons_check <- (S_cols_check)[unlist(Row[1,paste0("S_",S_cols_check)])]
   
   ## Get control players with at least those seasons >= 250 PA:
-  Player_donor <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
+  Player_donor <- Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
     dplyr::filter(Player_ID != ID,
                   grepl(paste("S_",Seasons_check, sep="", collapse=".*"),Seasons_Dat))
   N_donor <- dim(Player_donor)[1]
   while (N_donor < 10) { ## Cut off a year if less than 10 donor units
     Seasons_check <- Seasons_check[2:length(Seasons_check)]
-    Player_donor <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
+    Player_donor <- Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% 
       dplyr::filter(Player_ID != ID,
                     grepl(paste(Seasons_check, sep="", collapse=".*"),Seasons_Dat))
     N_donor <- dim(Player_donor)[1]
@@ -390,6 +402,17 @@ MSPEs_Results <- MSPEs_Res %>%
   bind_cols(t(apply(MSPEs_Res, 1,
                   FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_2023"))))
 
+### Save results data:
+save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
+     file=paste0("res/",outname,"-Results-Complete.Rda"))
+
+return(SCs_Results)
+}
+
+SC_Res_23 <- Run_SC(Player_pool_2023, outname="SC-2023")
+SC_Res_23_24 <- Run_SC(Player_pool_2023_24, outname="SC-2023-24")
+
+
 ## Graphical Parameters:
 BStats <- BStats %>% 
   left_join(B.250_pool %>%
@@ -400,15 +423,14 @@ BStats <- BStats %>%
               dplyr::summarize(min=min(value, na.rm=TRUE), 
                                max=max(value, na.rm=TRUE)) %>% 
               ungroup()) %>%
-  left_join(SCs_Results %>% group_by(Outcome) %>% 
+  left_join(bind_rows(SC_Res_23,SC_Res_23_24) %>% group_by(Outcome) %>% 
               dplyr::summarize(diff_min=min(Diff, na.rm=TRUE),
                                diff_max=max(Diff, na.rm=TRUE)) %>%
               ungroup(),
             by=join_by(stat==Outcome)) %>%
   dplyr::select(stat,Use,min,max,diff_min,diff_max)
 
-### Save internal data and results data:
-save(list=c("Player_pool", "B.250_pool", "Player_pool_avg", "BStats"),
+### Save internal data and parameters data:
+save(list=c("Player_pool_2023", "Player_pool_24o", "Player_pool_both", "B.250_pool", "Player_pool_avg", "BStats"),
      file="int/Player_pool_data.Rda")
-save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
-     file="res/SC-Results-Complete.Rda")
+
