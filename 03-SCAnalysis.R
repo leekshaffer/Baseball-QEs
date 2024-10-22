@@ -356,9 +356,9 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% pull(Player_ID))  {
                              Placebo_Unit=TRUE))
 }
 
-### Save results data:
+### Save intermediate results data:
 save(list=c("SCs_Full", "SCs_Plac", "MSPEs_Full"),
-     file=paste0("res/",outname,"-Results-Intermediate.Rda"))
+     file=paste0("res/",outname,"-Intermediate.Rda"))
 
 
 ### Get summary results with placebo estimates:
@@ -381,13 +381,15 @@ MSPEs_PRes <- MSPEs_Plac %>%
               dplyr::select(Placebo_ID,Outcome,Season,Diff) %>%
               pivot_wider(values_from=Diff, names_from=Season,
                           names_prefix="Diff_"),
-            by=c("Placebo_ID","Outcome"))
+            by=c("Placebo_ID","Outcome")) %>% rowwise() %>%
+  dplyr::mutate(Diff_Total=sum(c_across(paste0("Diff_",Res_Yrs))))
 MSPEs_Res <- MSPEs_Full %>% 
   left_join(SCs_Full %>% dplyr::filter(Intervention) %>% 
               dplyr::select(Player_ID,Outcome,Season,Diff) %>%
               pivot_wider(values_from=Diff, names_from=Season,
                           names_prefix="Diff_"),
-            by=c("Player_ID","Outcome"))
+            by=c("Player_ID","Outcome")) %>% rowwise() %>%
+  dplyr::mutate(Diff_Total=sum(c_across(paste0("Diff_",Res_Yrs))))
 
 PVals <- function(row,PlacData,ColName) {
   outcome <- row["Outcome"]
@@ -403,9 +405,8 @@ PVals <- function(row,PlacData,ColName) {
 }
 
 MSPEs_Results <- MSPEs_Res %>%
-  bind_cols(t(apply(MSPEs_Res %>% rowwise() %>%
-                      dplyr::mutate(Diff_Use=sum(c_across(paste0("Diff_",Res_Yrs)))), 1,
-                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_Use"))))
+  bind_cols(t(apply(MSPEs_Res , 1,
+                  FUN=function(x) PVals(x, PlacData=MSPEs_PRes, ColName="Diff_Total"))))
 
 ### Save results data:
 save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
