@@ -77,7 +77,8 @@ Player_pool_2024 <- Players_seasons %>%
 
 ## League-wide averages by categories (across players w/ >= 250PA):
 B.250_pool <- B.250 %>%
-  left_join(Player_pool_2023 %>% dplyr::select(Name_Match,Shift_Cat_2022), 
+  left_join(bind_rows(Player_pool_2023,Player_pool_2024) %>% distinct() %>% 
+              dplyr::select(Name_Match,Shift_Cat_2022), 
                                  by=join_by(Name_Match)) %>%
   dplyr::filter(!is.na(Shift_Cat_2022), PA >= 250, Season != 2020)
   
@@ -418,6 +419,8 @@ return(SCs_Results)
 ## Run analyses for all intervention players:
 SC_Res_23 <- Run_SC(Player_pool_2023, S_cols_2023, 15:19, Res_Yrs=2023,
                     outname="SC-2023")
+SC_Res_24 <- Run_SC(Player_pool_2024, S_cols_2024, 15:19, Res_Yrs=2024,
+                    outname="SC-2024")
 SC_Res_23_24 <- Run_SC(Player_pool_2023_24, S_cols_2023_24, 15:19, Res_Yrs=2023:2024,
                        outname="SC-2023-24")
 
@@ -432,7 +435,7 @@ BStats <- BStats %>%
               dplyr::summarize(min=min(value, na.rm=TRUE), 
                                max=max(value, na.rm=TRUE)) %>% 
               ungroup()) %>%
-  left_join(bind_rows(SC_Res_23,SC_Res_23_24) %>% group_by(Outcome) %>% 
+  left_join(bind_rows(SC_Res_23,SC_Res_23_24,SC_Res_24) %>% group_by(Outcome) %>% 
               dplyr::summarize(diff_min=min(Diff, na.rm=TRUE),
                                diff_max=max(Diff, na.rm=TRUE)) %>%
               ungroup(),
