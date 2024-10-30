@@ -7,20 +7,29 @@ library(bslib)
 Interv <- 2023
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
-load(file="res/SC-Results-Complete.Rda")
+load(file="res/SC-2023-Results-Complete.Rda")
+SCs_Results_2023 <- SCs_Results
+MSPEs_PRes_2023 <- MSPEs_PRes
+MSPEs_Results_2023 <- MSPEs_Results
+load(file="res/SC-2023-24-Results-Complete.Rda")
+SCs_Results_2023_24 <- SCs_Results
+MSPEs_PRes_2023_24 <- MSPEs_PRes
+MSPEs_Results_2023_24 <- MSPEs_Results
 source("./04-FigureCommands.R", local=TRUE)
 
 ## Lists
-Player_Choices <- Player_pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Name_Disp)
+Player_Choices <- unique(bind_rows(Player_pool_2023,Player_pool_2023_24,Player_pool_2024) %>% 
+  dplyr::filter(Shift_Cat_2022=="High") %>% pull(Name_Disp))
 BStats_Use <- BStats %>% dplyr::filter(Use)
 All_token_SC <- "-All-"
 All_token_DID <- "-All (Table Only)-"
 
 ## Data functions for player & outcome combination:
 ### Get player info from name:
-player_info <- function(display_name) {
+player_info <- function(display_name,targS) {
   B.250_row <- B.250_pool %>% dplyr::filter(Season==2022 & Name_Disp==display_name)
-  Pool_row <- Player_pool %>% dplyr::filter(Name_Disp==display_name)
+  Pool_row <- get(paste0("Player_pool_",gsub("-","_",targS))) %>% 
+    dplyr::filter(Name_Disp==display_name)
   list(First=B.250_row$name_first, Last=B.250_row$name_last,
        Shift_Perc_2022=Pool_row$Shift_Perc_2022,
        FG_ID=B.250_row$key_fangraphs,
@@ -39,9 +48,10 @@ player_info <- function(display_name) {
 }
 
 ### Effect Estimates & P-Values Table:
-ests_tbl <- function(display_name,statval) {
+ests_tbl <- function(display_name,statval,targS) {
+  SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",targS)))
   if (display_name==All_token_SC) {
-    Tbl <- SCs_Results %>% dplyr::filter(Outcome %in% BStats_Use$stat & 
+    Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & 
                                            Intervention & !(Placebo_Unit)) %>% 
       dplyr::select(Name_Disp,Outcome,Season,Observed,Synthetic,Diff) %>%
       left_join(MSPEs_Results %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
@@ -50,7 +60,7 @@ ests_tbl <- function(display_name,statval) {
       dplyr::mutate(across(.cols=-c("Player","Outcome","Season"),
                            .fns=~format(round(.x, digits=3), digits=3, nsmall=3)))
   } else {
-    Tbl <- SCs_Results %>% dplyr::filter(Outcome %in% BStats_Use$stat & Name_Disp==display_name & Intervention) %>% 
+    Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & Name_Disp==display_name & Intervention) %>% 
       dplyr::select(Name_Disp,Outcome,Season,Observed,Synthetic,Diff) %>%
       left_join(MSPEs_Results %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
       dplyr::rename(Player=Name_Disp, `Observed Value`=Observed, `Synthetic Control Value`=Synthetic,
@@ -88,8 +98,8 @@ DID_tbl <- function(statval) {
   return(Tbl)
 }
 
-wts_tbl <- function(display_name,statval) {
-  load(file=paste0("res/Players/Player-SC-",display_name,".Rda"))
+wts_tbl <- function(display_name,statval,targS) {
+  load(file=paste0("res/Players-SC-",targS,"/Player-SC-",display_name,".Rda"))
   Tbl <- Weights_Unit %>% dplyr::rename(`Control Player`=unit,
                                         `wOBA Weight`=wOBA_weight,
                                         `OBP Weight`=OBP_weight,
@@ -137,6 +147,9 @@ ui <- fluidPage(
                  selectInput("SCAllInStat", label = h4("Choose Outcome"),
                              choices = as.list(c(BStats_Use$stat)),
                              selected = "OBP"),
+                 selectInput("TargetSeason", label = h4("Choose Target Season"),
+                             choices = as.list(c("2023","2024","2023-24")),
+                             selected = "2023"),
                  # h4("Created by Lee Kennedy-Shaffer, 2024"),
                  # h5("Code Available:"),
                  # h6("https://github.com/leekshaffer/baseball-qes"),
@@ -175,6 +188,9 @@ ui <- fluidPage(
                  selectInput("InStat", label = h4("Choose Outcome"),
                              choices = as.list(c(All_token_SC,BStats_Use$stat)),
                              selected = All_token_SC),
+                 selectInput("TargetSeason", label = h4("Choose Target Season"),
+                             choices = as.list(c("2023","2024","2023-24")),
+                             selected = "2023"),
                  # h4("Created by Lee Kennedy-Shaffer, 2024"),
                  # h5("Code Available:"),
                  # h6("https://github.com/leekshaffer/baseball-qes"),
@@ -244,7 +260,7 @@ server <- function(input, output) {
   output$plot3_title_out <- renderText(plot3_title())
   
   output$URLs <- renderUI({
-      Info <- player_info(input$InName)
+      Info <- player_info(input$InName,input$TargetSeason)
       tagList(
         a("Batter Positioning Leaderboard, 2022",
           href=Info$MLB_BPL_URL),
@@ -265,28 +281,45 @@ server <- function(input, output) {
   })
   
   output$tbl1 <- DT::renderDataTable({
-    DT::datatable(ests_tbl(input$InName, input$InStat), 
+    validate(
+      need(file.exists(paste0("res/Players-SC-",input$TargetSeason,"/Player-SC-",input$InName,".Rda")),
+           message="This target season selection is not available for this player.")
+    )
+    DT::datatable(ests_tbl(input$InName, input$InStat, input$TargetSeason), 
                   options = list(paging = FALSE,
                                  searching = FALSE))
   })
   
   output$Alltbl1 <- DT::renderDataTable({
-    DT::datatable(ests_tbl(All_token_SC, input$SCAllInStat), 
+    validate(
+      need(file.exists(paste0("res/SC-",input$TargetSeason,"-Results-Complete.Rda")),
+           message="This target season selection is not available.")
+    )
+    DT::datatable(ests_tbl(All_token_SC, input$SCAllInStat, input$TargetSeason), 
                   options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
                                  pageLength = 9))
   })
   
   output$tbl2 <- DT::renderDataTable({
-    DT::datatable(wts_tbl(input$InName, input$InStat), 
+    validate(
+      need(file.exists(paste0("res/Players-SC-",input$TargetSeason,"/Player-SC-",input$InName,".Rda")),
+           message="This target season selection is not available for this player.")
+    )
+    DT::datatable(wts_tbl(input$InName, input$InStat, input$TargetSeason), 
                   options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
                                  pageLength = 3))
   })
   
   output$plot1 <- renderPlot({
+    Target <- input$InName
+    targS <- input$TargetSeason
+    validate(
+      need(file.exists(paste0("res/Players-SC-",targS,"/Player-SC-",Target,".Rda")),
+           message="This target season selection is not available for this player.")
+    )
+    load(file=paste0("res/Players-SC-",targS,"/Player-SC-",Target,".Rda"))
     if (input$InStat==All_token_SC) {
-        Target <- input$InName
-        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-        SC_data <- SCs_Results %>% 
+        SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>% 
           dplyr::filter(Outcome==BStats_Use$stat[1] & 
                           (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
                           (Season %in% unique(SCs$Season)))
@@ -307,9 +340,7 @@ server <- function(input, output) {
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
     } else {
-        Target <- input$InName
-        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-        SC_data <- SCs_Results %>% 
+        SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==input$InStat & 
                           (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
                           (Season %in% unique(SCs$Season)))
@@ -336,14 +367,23 @@ server <- function(input, output) {
   })
   
   output$Allplot1 <- renderPlot({
+    validate(
+      need(file.exists(paste0("res/SC-",input$TargetSeason,"-Results-Complete.Rda")),
+           message="This target season selection is not available.")
+    )
     if (input$SCAllInStat==All_token_SC) {
-        plot_SC_ests_all(BStats_Use$stat[1], SCs_Results) + 
+      SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$TargetSeason)))
+        plot_SC_ests_all(BStats_Use$stat[1], SCs_Res_int) + 
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
     } else {
+      MaxSeason <- ifelse(input$TargetSeason=="2023-24",2024,
+                           as.numeric(input$TargetSeason))
         plot_Traj(statval=input$SCAllInStat,
-                  Traj.dat=B.250_pool %>% dplyr::filter(Shift_Cat_2022 != "Medium"),
+                  Traj.dat=B.250_pool %>% 
+                    dplyr::filter(Shift_Cat_2022 != "Medium",
+                                  Season <= MaxSeason),
                   CatVar="Shift_Cat_2022",
                   CatName=NULL,
                   CatBreaks=c("High","Low"),
@@ -361,10 +401,15 @@ server <- function(input, output) {
   })
   
   output$plot2 <- renderPlot({
+    Target <- input$InName
+    targS <- input$TargetSeason
+    validate(
+      need(file.exists(paste0("res/Players-SC-",targS,"/Player-SC-",Target,".Rda")),
+           message="This target season selection is not available for this player.")
+    )
+    load(file=paste0("res/Players-SC-",targS,"/Player-SC-",Target,".Rda"))
     if (input$InStat==All_token_SC) {
-        Target <- input$InName
-        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-        SC_data <- SCs_Results %>% 
+        SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==BStats_Use$stat[2] & 
                           (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
                           (Season %in% unique(SCs$Season)))
@@ -385,9 +430,7 @@ server <- function(input, output) {
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
     } else {
-        Target <- input$InName
-        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-        SC_data <- SCs_Results %>% 
+        SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==input$InStat & 
                           (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
                           (Season %in% unique(SCs$Season)))
@@ -402,13 +445,18 @@ server <- function(input, output) {
   })
   
   output$Allplot2 <- renderPlot({
+    validate(
+      need(file.exists(paste0("res/SC-",input$TargetSeason,"-Results-Complete.Rda")),
+           message="This target season selection is not available.")
+    )
+    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$TargetSeason)))
     if (input$SCAllInStat==All_token_SC) {
-        plot_SC_ests_all(BStats_Use$stat[2], SCs_Results) + 
+        plot_SC_ests_all(BStats_Use$stat[2], SCs_Res_int) + 
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
     } else {
-        plot_SC_ests_all(input$SCAllInStat, SCs_Results) + 
+        plot_SC_ests_all(input$SCAllInStat, SCs_Res_int) + 
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
@@ -416,10 +464,15 @@ server <- function(input, output) {
   })
   
   output$plot3 <- renderPlot({
+    Target <- input$InName
+    targS <- input$TargetSeason
+    validate(
+      need(file.exists(paste0("res/Players-SC-",targS,"/Player-SC-",Target,".Rda")),
+           message="This target season selection is not available for this player.")
+    )
+    load(file=paste0("res/Players-SC-",targS,"/Player-SC-",Target,".Rda"))
     if (input$InStat==All_token_SC) {
-        Target <- input$InName
-        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-        SC_data <- SCs_Results %>% 
+        SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==BStats_Use$stat[3] & 
                           (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
                           (Season %in% unique(SCs$Season)))
@@ -440,9 +493,7 @@ server <- function(input, output) {
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
     } else {
-        Target <- input$InName
-        load(file=paste0("res/Players/Player-SC-",Target,".Rda"))
-        SC_data <- SCs_Results %>% 
+        SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==input$InStat & 
                           (Name_Disp %in% c(Target, Weights_Unit$unit)) & 
                           (Season %in% unique(SCs$Season)))

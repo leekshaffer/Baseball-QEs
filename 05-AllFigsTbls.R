@@ -79,7 +79,7 @@ Weights_Pred %>% dplyr::arrange(desc(wOBA_weight))
 Weights_Pred %>% dplyr::arrange(desc(OBP_weight))
 SCs %>% dplyr::filter(Intervention)
 
-ggsave(filename=paste0(MSoutdir,"Figure2.png"),
+ggsave(filename=paste0(MSoutdir,"Figure2-2023.png"),
        plot=plot_Comp("OBP", SCs_Results_2023, Target, "A. ") +
          plot_Comp("OPS", SCs_Results_2023, Target, "B. ") +
          plot_Comp("wOBA", SCs_Results_2023, Target, "C. ") +
@@ -134,13 +134,13 @@ Tbl2_2023_24 <- MSPEs_Results_2023_24 %>%
 write.csv(x=Tbl2 %>%
             dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
                                  .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(MSoutdir,"Table2.csv"),
+          file=paste0(MSoutdir,"Table2-2023.csv"),
           row.names=FALSE)
 
 write.csv(x=Tbl2_2023_24 %>%
             dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
                                  .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(MSoutdir,"Table2_2023_24.csv"),
+          file=paste0(MSoutdir,"Table2-2023-24.csv"),
           row.names=FALSE)
 
 SCs_Results_2023 %>% dplyr::filter(Season==Interv) %>%
@@ -156,7 +156,7 @@ SCs_Results_2023_24 %>% dplyr::filter(Season >= Interv) %>%
                    Prop.Pos=mean(Diff_Total > 0))
 
 ### Manuscript Figure 3:
-ggsave(filename=paste0(MSoutdir,"Figure3.png"),
+ggsave(filename=paste0(MSoutdir,"Figure3-2023.png"),
        plot=plot_SC_ests_all("OBP", SCs_Results_2023, LW=0.8, tagval="A. ") + 
          plot_SC_ests_all("OPS", SCs_Results_2023, LW=0.8, tagval="B. ") + 
          plot_SC_ests_all("wOBA", SCs_Results_2023, LW=0.8, tagval="C. ") + 
@@ -169,7 +169,7 @@ ggsave(filename=paste0(MSoutdir,"Figure3.png"),
                legend.direction="vertical"),
        dpi=600, width=12, height=8.1, units="in")
 
-ggsave(filename=paste0(MSoutdir,"Figure3_2023_24.png"),
+ggsave(filename=paste0(MSoutdir,"Figure3-2023-24.png"),
        plot=plot_SC_ests_all("OBP", SCs_Results_2023_24, LW=0.8, tagval="A. ") + 
          plot_SC_ests_all("OPS", SCs_Results_2023_24, LW=0.8, tagval="B. ") + 
          plot_SC_ests_all("wOBA", SCs_Results_2023_24, LW=0.8, tagval="C. ") + 
