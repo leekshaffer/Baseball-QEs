@@ -19,7 +19,7 @@ BStats_Use <- BStats %>% dplyr::filter(Use)
 load(file="int/Sav_data.Rda")
 
 ## Thresholds for high/low Shift rates:
-Cuts <- c(20,80)
+Cuts <- c(15,75)
 
 Interv <- 2023
 
