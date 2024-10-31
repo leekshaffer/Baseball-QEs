@@ -11,6 +11,10 @@ load(file="res/SC-2023-Results-Complete.Rda")
 SCs_Results_2023 <- SCs_Results
 MSPEs_PRes_2023 <- MSPEs_PRes
 MSPEs_Results_2023 <- MSPEs_Results
+load(file="res/SC-2024-Results-Complete.Rda")
+SCs_Results_2024 <- SCs_Results
+MSPEs_PRes_2024 <- MSPEs_PRes
+MSPEs_Results_2024 <- MSPEs_Results
 load(file="res/SC-2023-24-Results-Complete.Rda")
 SCs_Results_2023_24 <- SCs_Results
 MSPEs_PRes_2023_24 <- MSPEs_PRes
