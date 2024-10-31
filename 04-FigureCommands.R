@@ -27,6 +27,7 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
     scale_x_continuous(name="Season",
                        breaks=2015:2024,
                        minor_breaks=NULL) +
+    scale_y_continuous(labels = scales::label_number(accuracy = 0.001)) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0(tagvals[1],"Trend in ",statval," by batter handedness, bases empty"),
          y=statval)
@@ -47,6 +48,7 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
     scale_x_continuous(name="Season",
                        breaks=2015:2024,
                        minor_breaks=NULL) +
+    scale_y_continuous(labels = scales::label_number(accuracy = 0.001)) +
     coord_cartesian(ylim=ES.lim) +
     labs(y=paste0("DID Estimate for ",statval),
          title=paste0(tagvals[2],"DID analysis for ",statval,", consecutive seasons"))
@@ -90,12 +92,14 @@ plot_Traj <- function(statval, Traj.dat,
   if (Fixed) {
     plot <- plot +
       scale_y_continuous(name=paste0("Average player ",statval),
-                         limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+                         limits=unlist(BStats[BStats$stat==statval,c("min","max")]),
+                         labels = scales::label_number(accuracy = 0.001)) +
       coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
       
   } else {
     plot <- plot +
-      scale_y_continuous(name=paste0("Average player ",statval))
+      scale_y_continuous(name=paste0("Average player ",statval),
+                         labels = scales::label_number(accuracy = 0.001))
   }
     plot <- plot + 
       geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
@@ -150,7 +154,8 @@ plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
                        breaks=2015:2024,
                        minor_breaks=NULL) +
     scale_y_continuous(name=statval,
-                       limits=unlist(BStats[BStats$stat==statval,c("min","max")])) +
+                       limits=unlist(BStats[BStats$stat==statval,c("min","max")]),
+                       labels = scales::label_number(accuracy = 0.001)) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
     geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0(tagval,"Synthetic and Observed ",statval," for ",display_name))
@@ -170,7 +175,8 @@ plot_SC_ests <- function(statval, SC.dat,
     scale_x_continuous(name="Season",
                        breaks=2015:2024, minor_breaks=NULL) +
     scale_y_continuous(name="Difference, Synthetic - Observed",
-                       limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
+                       limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")]),
+                       labels = scales::label_number(accuracy = 0.001)) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
     scale_color_manual(name=LegName,
                        breaks=LegBreaks,
