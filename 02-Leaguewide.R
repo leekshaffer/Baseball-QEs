@@ -24,18 +24,20 @@ for (year in Interv) {
 }
 
 ## 2022 vs. 2023 2x2 table:
-TwoByTwo <- FG.dat.empty %>% dplyr::filter(Season %in% c(2022,2023)) %>%
+TwoByTwo <- FG.dat.empty %>% dplyr::filter(Season %in% c(2022,Interv)) %>%
   dplyr::select(Season,Batter,all_of(BStats)) %>%
   pivot_wider(id_cols=Batter, names_from=Season,
               values_from=!c("Season","Batter"))
 for (val in BStats) {
-  TwoByTwo[paste(val,"Diff",sep="_")] <- TwoByTwo[paste(val,"2023",sep="_")]-TwoByTwo[paste(val,"2022",sep="_")]
+  for (year in Interv) {
+    TwoByTwo[paste0(val,"_Diff-",year)] <- TwoByTwo[paste(val,year,sep="_")]-TwoByTwo[paste(val,year-1,sep="_")]
+  }
 }
 TwoByTwo <- TwoByTwo %>%
   bind_rows(c(Batter="Diff (LHB \U2212 RHB)",
               TwoByTwo %>% dplyr::filter(Batter=="LHB") %>% dplyr::select(!c("Batter")) - 
                 TwoByTwo %>% dplyr::filter(Batter=="RHB") %>% dplyr::select(!c("Batter"))))
-TwoByTwo %>% dplyr::select(Batter,ends_with("Diff"))
+TwoByTwo %>% dplyr::select(Batter,contains("Diff"))
 
 ## Event study analysis:
 FullES <- FG.dat.empty %>% dplyr::select(Season,Batter,all_of(BStats)) %>%

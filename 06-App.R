@@ -86,7 +86,9 @@ DID_tbl <- function(statval) {
       pivot_wider(id_cols=c("Outcome","Batter"), names_from="Year", values_from="Value") %>%
       dplyr::rename(`Average, 2022`=`2022`,
                     `Average, 2023`=`2023`,
-                    `Difference, 2023-2022`=`Diff`) %>%
+                    `Average, 2024`=`2024`,
+                    "Diff., 2023 \U2212 2022"=`Diff-2023`,
+                    "Diff., 2024 \U2212 2023"=`Diff-2024`) %>%
       dplyr::arrange(Outcome) %>%
       dplyr::mutate(across(.cols=-c("Outcome","Batter"),
                            .fns=~format(round(.x, digits=3), digits=3, nsmall=3)))
@@ -94,7 +96,7 @@ DID_tbl <- function(statval) {
     Tbl <- TwoByTwo %>% dplyr::select(c("Batter",starts_with(statval)))
     colnames(Tbl) <- c("Batter Handedness",
                        paste(rep(statval, each=3),
-                             c("2022","2023","Difference, 2023-2022"),
+                             c("2022","2023","2024","Diff., 2023 \U2212 2022","Diff., 2024 \U2212 2023"),
                              sep=" "))
     Tbl <- Tbl %>% dplyr::mutate(across(.cols=-c("Batter Handedness"),
                                         .fns=~format(round(.x, digits=3), digits=3, nsmall=3)))
