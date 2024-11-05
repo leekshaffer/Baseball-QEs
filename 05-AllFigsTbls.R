@@ -78,9 +78,9 @@ write.csv(x=Tbl1 %>%
 Target <- "Corey Seager"
 
 load(file=paste0("res/Players-SC-2023/Player-SC-",Target,".Rda"))
-Weights_Pred %>% dplyr::arrange(desc(OPS_weight))
-Weights_Pred %>% dplyr::arrange(desc(wOBA_weight))
-Weights_Pred %>% dplyr::arrange(desc(OBP_weight))
+Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
+Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
+Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
 SCs %>% dplyr::filter(Intervention)
 
 ggsave(filename=paste0(MSoutdir,"Figure2-2023.png"),
