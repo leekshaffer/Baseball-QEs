@@ -151,7 +151,7 @@ ui <- fluidPage(
                  selectInput("SCAllInStat", label = h4("Choose Outcome"),
                              choices = as.list(c(BStats_Use$stat)),
                              selected = "OBP"),
-                 selectInput("TargetSeason", label = h4("Choose Target Season"),
+                 selectInput("AllTargetSeason", label = h4("Choose Target Season"),
                              choices = as.list(c("2023","2024","2023-24")),
                              selected = "2023"),
                  # h4("Created by Lee Kennedy-Shaffer, 2024"),
@@ -296,10 +296,10 @@ server <- function(input, output) {
   
   output$Alltbl1 <- DT::renderDataTable({
     validate(
-      need(file.exists(paste0("res/SC-",input$TargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
            message="This target season selection is not available.")
     )
-    DT::datatable(ests_tbl(All_token_SC, input$SCAllInStat, input$TargetSeason), 
+    DT::datatable(ests_tbl(All_token_SC, input$SCAllInStat, input$AllTargetSeason), 
                   options = list(lengthMenu = list(c(3, 6, 9, -1), c('3', '6', '9', 'All')),
                                  pageLength = 9))
   })
@@ -372,18 +372,18 @@ server <- function(input, output) {
   
   output$Allplot1 <- renderPlot({
     validate(
-      need(file.exists(paste0("res/SC-",input$TargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
            message="This target season selection is not available.")
     )
     if (input$SCAllInStat==All_token_SC) {
-      SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$TargetSeason)))
+      SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
         plot_SC_ests_all(BStats_Use$stat[1], SCs_Res_int) + 
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
     } else {
-      MaxSeason <- ifelse(input$TargetSeason=="2023-24",2024,
-                           as.numeric(input$TargetSeason))
+      MaxSeason <- ifelse(input$AllTargetSeason=="2023-24",2024,
+                           as.numeric(input$AllTargetSeason))
         plot_Traj(statval=input$SCAllInStat,
                   Traj.dat=B.250_pool %>% 
                     dplyr::filter(Shift_Cat_2022 != "Medium",
@@ -450,10 +450,10 @@ server <- function(input, output) {
   
   output$Allplot2 <- renderPlot({
     validate(
-      need(file.exists(paste0("res/SC-",input$TargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
            message="This target season selection is not available.")
     )
-    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$TargetSeason)))
+    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
     if (input$SCAllInStat==All_token_SC) {
         plot_SC_ests_all(BStats_Use$stat[2], SCs_Res_int) + 
           theme(legend.position="bottom",
