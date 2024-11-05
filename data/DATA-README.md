@@ -21,5 +21,7 @@
       - fg-custom-LHB-empty-adv-2015-2024.csv: Advanced batting statistics for the league as a whole, by season, 2015--2024, for left-handed hitters with the bases empty. Updated 10/21/24, 2pm, from https://www.fangraphs.com/leaders/splits-leaderboards?splitArr=57,3&splitArrPitch=&autoPt=false&splitTeams=false&statType=mlb&statgroup=2&startDate=2015-03-01&endDate=2024-11-01&players=&filter=&groupBy=season&wxTemperature=&wxPressure=&wxAirDensity=&wxElevation=&wxWindSpeed=&position=B&sort=23,1
      
       - fg-custom-RHB-empty-adv-2015-2024.csv: Advanced batting statistics for the league as a whole, by season, 2015--2024, for right-handed hitters with the bases empty. Updated 10/21/24, 2pm, from https://www.fangraphs.com/leaders/splits-leaderboards?splitArr=57,4&splitArrPitch=&autoPt=false&splitTeams=false&statType=mlb&statgroup=2&startDate=2015-03-01&endDate=2024-11-01&players=&filter=&groupBy=season&wxTemperature=&wxPressure=&wxAirDensity=&wxElevation=&wxWindSpeed=&position=B&sort=23,1
+      
+       - fg-custom-2015-2024.csv: Advanced batting statistics for the league as a whole, by season, 2015--2024, for all plate appearances. Downloaded 11/5/24, 4pm, from https://www.fangraphs.com/leaders/splits-leaderboards?splitArr=&splitArrPitch=&autoPt=false&splitTeams=false&statType=mlb&statgroup=2&startDate=2015-03-01&endDate=2024-11-01&players=&filter=&groupBy=season&wxTemperature=&wxPressure=&wxAirDensity=&wxElevation=&wxWindSpeed=&position=B&sort=23,1
     
     
