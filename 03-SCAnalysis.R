@@ -54,8 +54,12 @@ Shift_summ <- Sav.Shifts %>% dplyr::filter(Season==2022) %>%
                                       if_else(Shift_Perc_Max <= Cuts[1],"Low","Medium")),
                 Shift_Cat_Min=if_else(Shift_Perc_Min >= Cuts[2],"High",
                                       if_else(Shift_Perc_Min <= Cuts[1],"Low","Medium"))) %>%
+  left_join(Sav.Shifts %>% dplyr::filter(Season >= Interv) %>% 
+              pivot_wider(id_cols=Name_Match, names_from=Season, 
+                          names_prefix="Shade_Perc_",values_from=PA_Shade_Percent)) %>%
   ungroup()
 
+  
 ## Create player pool
 ### Has minimum season restrictions (now, 2021, 2022, and 2023 meet threshold)
 ### and creates display name
