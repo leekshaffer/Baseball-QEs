@@ -41,10 +41,10 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
     theme_bw() + theme(legend.position="bottom") +
     scale_color_manual(name="Analysis Type",
                        values=brewer.pal(3,"Dark2")[c(3,1)],
-                       breaks=c("Interv_startention","Placebo")) +
+                       breaks=c("Intervention","Placebo")) +
     scale_shape_manual(name="Analysis Type",
                        values=c(19,18),
-                       breaks=c("Interv_startention","Placebo")) +
+                       breaks=c("Intervention","Placebo")) +
     scale_x_continuous(name="Season",
                        breaks=2015:2024,
                        minor_breaks=NULL) +
