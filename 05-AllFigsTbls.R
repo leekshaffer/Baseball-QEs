@@ -296,9 +296,16 @@ for (type in types) {
   }
 }
 
-### Scatter plot of SCM estimates and shift rates:
-ggplot(data=SC_Results_2023 %>% dplyr::filter(Intervention,!Placebo_Unit), 
-       mapping=aes(x=Shift_Rate_2022, y=Diff)) +
-  geom_point() + geom_smooth(method=lm, se=FALSE) +
-  theme_bw()
+### Manuscript Figure 4:
+for (type in types) {
+  ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
+         plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
+                            LW=0.8, tagval="A. ") + 
+           plot_SC_Shift("OPS", get(x=paste0("SCs_Results_",type)),
+                         LW=0.8, tagval="B. ") + 
+           plot_SC_Shift("wOBA", get(x=paste0("SCs_Results_",type)),
+                         LW=0.8, tagval="C. ") + 
+           plot_layout(nrow=2, ncol=2, byrow=TRUE),
+         dpi=600, width=12, height=8.1, units="in")
+}
 

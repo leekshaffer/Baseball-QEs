@@ -174,7 +174,7 @@ plot_SC_ests <- function(statval, SC.dat,
     geom_line(linewidth=LW) +
     scale_x_continuous(name="Season",
                        breaks=2015:2024, minor_breaks=NULL) +
-    scale_y_continuous(name="Difference, Synthetic - Observed",
+    scale_y_continuous(name="Difference, Synthetic \U2013 Observed",
                        limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")]),
                        labels = scales::label_number(accuracy = 0.001)) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
@@ -209,4 +209,22 @@ plot_SC_ests_all <- function(statval, SC.dat, LW=1, tagval=NULL) {
                title=paste0("SCM estimates for ",statval," for all included players"),
                LW=LW,
                tagval)
+}
+
+## SCM estimates by Shift Rate plots:
+plot_SC_Shift <- function(statval, SC.dat,
+                         LW=1,
+                         tagval=NULL) {
+  ggplot(data=SC.dat %>% dplyr::filter(Outcome==statval,Intervention,!Placebo_Unit),
+         mapping=aes(x=Shift_Perc_2022, y=Diff)) +
+    geom_point() + geom_smooth(method=lm, se=FALSE,
+                               linewidth=LW, color="gray50", linetype="dashed") +
+    scale_x_continuous(name="Shift Rate (2022)",
+                       labels=function(x) paste0(x,"%")) +
+    scale_y_continuous(name="Difference, Synthetic \U2013 Observed",
+                       limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")]),
+                       labels = scales::label_number(accuracy = 0.001)) +
+    coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
+    theme_bw() +
+    labs(title=paste0(tagval,"SCM estimates for ",statval," by 2022 Shift Rate"))
 }
