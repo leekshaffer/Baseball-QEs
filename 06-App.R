@@ -5,20 +5,21 @@ library(bslib)
 
 ## Data needed to run:
 Interv <- 2023
+types <- c("2023","2024","2023_24") ## The analysis year types
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
-load(file="res/SC-2023-Results-Complete.Rda")
-SCs_Results_2023 <- SCs_Results
-MSPEs_PRes_2023 <- MSPEs_PRes
-MSPEs_Results_2023 <- MSPEs_Results
-load(file="res/SC-2024-Results-Complete.Rda")
-SCs_Results_2024 <- SCs_Results
-MSPEs_PRes_2024 <- MSPEs_PRes
-MSPEs_Results_2024 <- MSPEs_Results
-load(file="res/SC-2023-24-Results-Complete.Rda")
-SCs_Results_2023_24 <- SCs_Results
-MSPEs_PRes_2023_24 <- MSPEs_PRes
-MSPEs_Results_2023_24 <- MSPEs_Results
+for (type in types) {
+  Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat_2022, 
+                                                               Shift_Perc_Max)
+  load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
+  assign(x=paste0("MSPEs_PRes_",type),
+         value=MSPEs_PRes %>% left_join(Shifts, by=join_by(Placebo_ID==Player_ID)))
+  assign(x=paste0("MSPEs_Results_",type),
+         value=MSPEs_Results %>% left_join(Shifts, by=join_by(Player_ID)))
+  assign(x=paste0("SCs_Results_",type),
+         value=SCs_Results %>% left_join(Shifts, by=join_by(Player_ID)))
+  rm(list=c("MSPEs_Results","MSPEs_PRes","SCs_Results"))
+}
 source("./04-FigureCommands.R", local=TRUE)
 
 ## Lists
@@ -36,6 +37,8 @@ player_info <- function(display_name,targS) {
     dplyr::filter(Name_Disp==display_name)
   list(First=B.250_row$name_first, Last=B.250_row$name_last,
        Shift_Perc_2022=Pool_row$Shift_Perc_2022,
+       Shade_Perc_2023=Pool_row$Shade_Perc_2023,
+       Shade_Perc_2024=Pool_row$Shade_Perc_2024,
        FG_ID=B.250_row$key_fangraphs,
        BR_ID=B.250_row$key_bbref,
        MLB_ID=B.250_row$Player_ID,
@@ -54,11 +57,12 @@ player_info <- function(display_name,targS) {
 ### Effect Estimates & P-Values Table:
 ests_tbl <- function(display_name,statval,targS) {
   SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",targS)))
+  MSPEs_Res_int <- get(paste0("MSPEs_Results_",gsub("-","_",targS)))
   if (display_name==All_token_SC) {
     Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & 
                                            Intervention & !(Placebo_Unit)) %>% 
       dplyr::select(Name_Disp,Outcome,Season,Observed,Synthetic,Diff) %>%
-      left_join(MSPEs_Results %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
+      left_join(MSPEs_Res_int %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
       dplyr::rename(Player=Name_Disp, `Observed Value`=Observed, `Synthetic Control Value`=Synthetic,
                     `Effect Estimate`=Diff, `Placebo P-Value`=PVal) %>%
       dplyr::mutate(across(.cols=-c("Player","Outcome","Season"),
@@ -66,7 +70,7 @@ ests_tbl <- function(display_name,statval,targS) {
   } else {
     Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & Name_Disp==display_name & Intervention) %>% 
       dplyr::select(Name_Disp,Outcome,Season,Observed,Synthetic,Diff) %>%
-      left_join(MSPEs_Results %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
+      left_join(MSPEs_Res_int %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
       dplyr::rename(Player=Name_Disp, `Observed Value`=Observed, `Synthetic Control Value`=Synthetic,
                     `Effect Estimate`=Diff, `Placebo P-Value`=PVal) %>%
       dplyr::mutate(across(.cols=-c("Player","Outcome","Season"),
@@ -154,7 +158,7 @@ ui <- fluidPage(
                              choices = as.list(c(BStats_Use$stat)),
                              selected = "OBP"),
                  selectInput("AllTargetSeason", label = h4("Choose Target Season"),
-                             choices = as.list(c("2023","2024","2023-24")),
+                             choices = as.list(gsub("_","-",types)),
                              selected = "2023"),
                  # h4("Created by Lee Kennedy-Shaffer, 2024"),
                  # h5("Code Available:"),
@@ -180,9 +184,13 @@ ui <- fluidPage(
                    plotOutput("Allplot1", width="95%")),
                  accordion_panel(
                    "Plot 2: SCM Estimates",
-                   plotOutput("Allplot2", width="95%"))
+                   plotOutput("Allplot2", width="95%")),
+                 accordion_panel(
+                   "Plot 3: SCM Estimates by 2022 Shift Rate",
+                   plotOutput("Allplot3", width="95%"))
+                 )
              )
-    )),
+    ),
     
     tabPanel("Analysis 2 (SCM): By Player",
              page_sidebar(
@@ -195,7 +203,7 @@ ui <- fluidPage(
                              choices = as.list(c(All_token_SC,BStats_Use$stat)),
                              selected = All_token_SC),
                  selectInput("TargetSeason", label = h4("Choose Target Season"),
-                             choices = as.list(c("2023","2024","2023-24")),
+                             choices = as.list(gsub("_","-",types)),
                              selected = "2023"),
                  # h4("Created by Lee Kennedy-Shaffer, 2024"),
                  # h5("Code Available:"),
@@ -209,9 +217,9 @@ ui <- fluidPage(
                ),
                
                accordion(
-                 open=c("Useful Player Links", "Table 1: SCM Estimates"),
+                 open=c("Player Links and Info", "Table 1: SCM Estimates"),
                  accordion_panel(
-                   "Useful Player Links",
+                   "Player Links and Info",
                    uiOutput("URLs")),
                  accordion_panel(
                    "Table 1: SCM Estimates",
@@ -267,6 +275,22 @@ server <- function(input, output) {
   
   output$URLs <- renderUI({
       Info <- player_info(input$InName,input$TargetSeason)
+      if (input$TargetSeason %in% c("2023","2024")) {
+        TL2 <- tagList(a(paste0(input$TargetSeason," Shade Rate: ",
+                                format(round(Info[[paste0("Shade_Perc_",input$TargetSeason)]],
+                                             digits=1),
+                                       nsmall=1),"%")))
+      } else if (input$TargetSeason=="2023-24") {
+        TL2 <- tagList(a(paste0("2023 Shade Rate: ",
+                                format(round(Info$Shade_Perc_2023,
+                                             digits=1),
+                                       nsmall=1),"%")),
+                       br(),
+                       a(paste0("2024 Shade Rate: ",
+                                format(round(Info$Shade_Perc_2024,
+                                             digits=1),
+                                       nsmall=1),"%")))
+      }
       tagList(
         a("Batter Positioning Leaderboard, 2022",
           href=Info$MLB_BPL_URL),
@@ -275,7 +299,12 @@ server <- function(input, output) {
           href=Info$FG_URL),
         br(),
         a("Baseball Reference Player Page",
-          href=Info$BR_URL))
+          href=Info$BR_URL),
+        br(),
+        a(paste0("2022 Shift Rate: ",format(round(Info$Shift_Perc_2022, digits=1),nsmall=1),"%")),
+        br(),
+        TL2
+        )
   })
   
   output$AllURLs <- renderUI({
@@ -377,13 +406,13 @@ server <- function(input, output) {
       need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
            message="This target season selection is not available.")
     )
-    if (input$SCAllInStat==All_token_SC) {
-      SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
-        plot_SC_ests_all(BStats_Use$stat[1], SCs_Res_int) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-    } else {
+    # if (input$SCAllInStat==All_token_SC) {
+    #   SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
+    #     plot_SC_ests_all(BStats_Use$stat[1], SCs_Res_int) + 
+    #       theme(legend.position="bottom",
+    #             legend.background=element_rect(fill="white", color="grey50"),
+    #             legend.direction="horizontal")
+    # } else {
       MaxSeason <- ifelse(input$AllTargetSeason=="2023-24",2024,
                            as.numeric(input$AllTargetSeason))
         plot_Traj(statval=input$SCAllInStat,
@@ -403,7 +432,7 @@ server <- function(input, output) {
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-    }
+    # }
   })
   
   output$plot2 <- renderPlot({
@@ -456,17 +485,27 @@ server <- function(input, output) {
            message="This target season selection is not available.")
     )
     SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
-    if (input$SCAllInStat==All_token_SC) {
-        plot_SC_ests_all(BStats_Use$stat[2], SCs_Res_int) + 
-          theme(legend.position="bottom",
-                legend.background=element_rect(fill="white", color="grey50"),
-                legend.direction="horizontal")
-    } else {
+    # if (input$SCAllInStat==All_token_SC) {
+    #     plot_SC_ests_all(BStats_Use$stat[2], SCs_Res_int) + 
+    #       theme(legend.position="bottom",
+    #             legend.background=element_rect(fill="white", color="grey50"),
+    #             legend.direction="horizontal")
+    # } else {
         plot_SC_ests_all(input$SCAllInStat, SCs_Res_int) + 
           theme(legend.position="bottom",
                 legend.background=element_rect(fill="white", color="grey50"),
                 legend.direction="horizontal")
-    }
+    # }
+  })
+  
+  output$Allplot3 <- renderPlot({
+    validate(
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
+           message="This target season selection is not available.")
+    )
+    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
+    plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
+                  LW=1, tagval=NULL)
   })
   
   output$plot3 <- renderPlot({
