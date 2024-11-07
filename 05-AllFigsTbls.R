@@ -212,7 +212,7 @@ for (outval in BStats$stat) {
 }
 
 ### Full Set of all-player SCM estimate plots:
-Plot_SC_Res <- function(type) {
+for (type in types) {
   SCMoutdir <- paste0("figs/SC-",gsub("_","-",type)," Estimates/")
   for (outval in BStats %>% dplyr::filter(Use) %>% dplyr::pull(stat)) {
     ggsave(filename=paste0(SCMoutdir,"SCM-plot-",outval,".png"),
@@ -224,16 +224,18 @@ Plot_SC_Res <- function(type) {
   }
   
   ### Full Set of player-specific SCM estimate plots:
-  for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
+  for (ID in unique(get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(!Placebo_Unit) %>% 
+                    pull(Player_ID))) {
     ## Info on target player:
-    Row <- Pool[Pool$Player_ID==ID,]
-    Target <- Row$Name_Disp
+    Target <- unique(get(x=paste0("SCs_Results_",type)) %>% 
+                       dplyr::filter(Player_ID==ID) %>% pull(Name_Disp))
     print(paste0("Beginning figures for ",Target))
-    Seasons <- unique(SCs_Results %>% dplyr::filter(Player_ID==ID) %>% pull(Season))
-    Targetdir <- paste0("figs/Players-",outname,"/",Target,"/")
+    Seasons <- unique(get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(Player_ID==ID) %>% 
+                        pull(Season))
+    Targetdir <- paste0("figs/Players-SC-",gsub("_","-",type),"/",Target,"/")
     for (outval in BStats %>% dplyr::filter(Use) %>% pull(stat)) {
       ## Get data for player & placebos for that outcome only:
-      SC_data <- SCs_Results %>% 
+      SC_data <- get(x=paste0("SCs_Results_",type)) %>% 
         dplyr::filter(Outcome==outval & 
                         (Player_ID==ID | Placebo_Unit) & 
                         (Season %in% Seasons))
@@ -294,8 +296,9 @@ Plot_SC_Res <- function(type) {
   }
 }
 
-Plot_SC_Res("SC-2023", Player_pool_2023)
-Plot_SC_Res("SC-2024", Player_pool_2024)
-Plot_SC_Res("SC-2023-24", Player_pool_2023_24)
-
+### Scatter plot of SCM estimates and shift rates:
+ggplot(data=SC_Results_2023 %>% dplyr::filter(Intervention,!Placebo_Unit), 
+       mapping=aes(x=Shift_Rate_2022, y=Diff)) +
+  geom_point() + geom_smooth(method=lm, se=FALSE) +
+  theme_bw()
 
