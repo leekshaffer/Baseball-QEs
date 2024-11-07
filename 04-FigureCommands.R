@@ -3,7 +3,7 @@
 
 require(tidyverse)
 require(RColorBrewer)
-Interv <- 2023
+Interv_start <- 2023
 
 ## DID Analysis Plots:
 
@@ -28,7 +28,7 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
                        breaks=2015:2024,
                        minor_breaks=NULL) +
     scale_y_continuous(labels = scales::label_number(accuracy = 0.001)) +
-    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv_start-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0(tagvals[1],"Trend in ",statval," by batter handedness, bases empty"),
          y=statval)
   
@@ -36,15 +36,15 @@ plot_DIDs <- function(statval, DID.CF.dat, DID.ES.dat,
                     mapping=aes(x=Season, y=get(paste0(statval,"_ES")), 
                                 color=Type, shape=Type)) +
     geom_point(size=2.8) +
-    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv_start-0.5, color="grey50", linetype="dashed") +
     geom_hline(yintercept=0, color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
     scale_color_manual(name="Analysis Type",
                        values=brewer.pal(3,"Dark2")[c(3,1)],
-                       breaks=c("Intervention","Placebo")) +
+                       breaks=c("Interv_startention","Placebo")) +
     scale_shape_manual(name="Analysis Type",
                        values=c(19,18),
-                       breaks=c("Intervention","Placebo")) +
+                       breaks=c("Interv_startention","Placebo")) +
     scale_x_continuous(name="Season",
                        breaks=2015:2024,
                        minor_breaks=NULL) +
@@ -102,7 +102,7 @@ plot_Traj <- function(statval, Traj.dat,
                          labels = scales::label_number(accuracy = 0.001))
   }
     plot <- plot + 
-      geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+      geom_vline(xintercept=Interv_start-0.5, color="grey50", linetype="dashed") +
       scale_color_manual(name=CatName,
                          values=CatCols,
                          breaks=CatBreaks,
@@ -157,7 +157,7 @@ plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
                        limits=unlist(BStats[BStats$stat==statval,c("min","max")]),
                        labels = scales::label_number(accuracy = 0.001)) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
-    geom_vline(xintercept=Interv-0.5, color="grey50", linetype="dashed") +
+    geom_vline(xintercept=Interv_start-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0(tagval,"Synthetic and Observed ",statval," for ",display_name))
 }
 
@@ -190,7 +190,7 @@ plot_SC_ests <- function(statval, SC.dat,
                           breaks=LegBreaks,
                           labels=LegLabs,
                           values=LegLTY) +
-    geom_vline(xintercept=Interv-0.5,
+    geom_vline(xintercept=Interv_start-0.5,
                color="grey50", linetype="dashed") +
     theme_bw() + theme(legend.position="bottom") +
     labs(title=paste0(tagval,title))

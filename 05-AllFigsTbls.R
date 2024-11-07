@@ -1,4 +1,4 @@
-## 05-ManuscriptResults.R
+## 05-AllFigsTbls.R
 ## Creation of figures, tables, and key results for manuscript and repository
 
 require(tidyverse)
@@ -6,23 +6,25 @@ require(patchwork)
 source("04-FigureCommands.R")
 
 MSoutdir <- "figs/Manuscript/"
-Interv <- 2023
+Interv <- 2023:2024
+types <- c("2023","2024","2023_24") ## The analysis year types
 
 ## Required data sets:
 load(file="int/DID_data.Rda")
 load(file="int/Player_pool_data.Rda")
-load(file="res/SC-2023-Results-Complete.Rda")
-MSPEs_PRes_2023 <- MSPEs_PRes
-SCs_Results_2023 <- SCs_Results
-MSPEs_Results_2023 <- MSPEs_Results
-load(file="res/SC-2024-Results-Complete.Rda")
-MSPEs_PRes_2024 <- MSPEs_PRes
-SCs_Results_2024 <- SCs_Results
-MSPEs_Results_2024 <- MSPEs_Results
-load(file="res/SC-2023-24-Results-Complete.Rda")
-MSPEs_PRes_2023_24 <- MSPEs_PRes
-SCs_Results_2023_24 <- SCs_Results
-MSPEs_Results_2023_24 <- MSPEs_Results
+
+for (type in types) {
+  Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat_2022, 
+                                                               Shift_Perc_Max)
+  load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
+  assign(x=paste0("MSPEs_PRes_",type),
+         value=MSPEs_PRes %>% left_join(Shifts, by=join_by(Placebo_ID==Player_ID)))
+  assign(x=paste0("MSPEs_Results_",type),
+         value=MSPEs_Results %>% left_join(Shifts, by=join_by(Player_ID)))
+  assign(x=paste0("SCs_Results_",type),
+         value=SCs_Results %>% left_join(Shifts, by=join_by(Player_ID)))
+  rm(list=c("MSPEs_Results","MSPEs_PRes","SCs_Results"))
+}
 
 ## Analysis 1: League-Wide
 
@@ -77,166 +79,71 @@ write.csv(x=Tbl1 %>%
 ### Manuscript Figure 2:
 Target <- "Corey Seager"
 
-load(file=paste0("res/Players-SC-2023/Player-SC-",Target,".Rda"))
-Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
-Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
-Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
-SCs %>% dplyr::filter(Intervention)
-
-ggsave(filename=paste0(MSoutdir,"Figure2-2023.png"),
-       plot=plot_Comp("OBP", SCs_Results_2023, Target, "A. ") +
-         plot_Comp("OPS", SCs_Results_2023, Target, "B. ") +
-         plot_Comp("wOBA", SCs_Results_2023, Target, "C. ") +
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.background=element_rect(fill="white",
-                                              color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=12, height=8.1, units="in")
-
-#### Version with 2024 results too:
-load(file=paste0("res/Players-SC-2023-24/Player-SC-",Target,".Rda"))
-Weights_Pred %>% dplyr::arrange(desc(OPS_weight))
-Weights_Pred %>% dplyr::arrange(desc(wOBA_weight))
-Weights_Pred %>% dplyr::arrange(desc(OBP_weight))
-SCs %>% dplyr::filter(Intervention)
-
-ggsave(filename=paste0(MSoutdir,"Figure2-2023-24.png"),
-       plot=plot_Comp("OBP", SCs_Results_2023_24, Target, "A. ") +
-         plot_Comp("OPS", SCs_Results_2023_24, Target, "B. ") +
-         plot_Comp("wOBA", SCs_Results_2023_24, Target, "C. ") +
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.background=element_rect(fill="white",
-                                              color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=12, height=8.1, units="in")
-
-#### Version with 2024 results only:
-load(file=paste0("res/Players-SC-2024/Player-SC-",Target,".Rda"))
-Weights_Pred %>% dplyr::arrange(desc(OPS_weight))
-Weights_Pred %>% dplyr::arrange(desc(wOBA_weight))
-Weights_Pred %>% dplyr::arrange(desc(OBP_weight))
-SCs %>% dplyr::filter(Intervention)
-
-ggsave(filename=paste0(MSoutdir,"Figure2-2024.png"),
-       plot=plot_Comp("OBP", SCs_Results_2023_24, Target, "A. ") +
-         plot_Comp("OPS", SCs_Results_2023_24, Target, "B. ") +
-         plot_Comp("wOBA", SCs_Results_2023_24, Target, "C. ") +
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.background=element_rect(fill="white",
-                                              color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=12, height=8.1, units="in")
-
-
+for (type in types) {
+  print(paste0("Player-specific SCM for: ",Target," in ",gsub("_","-",type)))
+  load(file=paste0("res/Players-SC-",gsub("_","-",type),"/Player-SC-",Target,".Rda"))
+  Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
+  Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
+  Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
+  SCs %>% dplyr::filter(Intervention)
+  ggsave(filename=paste0(MSoutdir,"Figure2-",gsub("_","-",type),".png"),
+         plot=plot_Comp("OBP", get(x=paste0("SCs_Results_",type)), Target, "A. ") +
+           plot_Comp("OPS", get(x=paste0("SCs_Results_",type)), Target, "B. ") +
+           plot_Comp("wOBA", get(x=paste0("SCs_Results_",type)), Target, "C. ") +
+           guide_area() +
+           plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+           theme(legend.background=element_rect(fill="white",
+                                                color="grey50"),
+                 legend.text=element_text(size=rel(1.2)),
+                 legend.title=element_text(size=rel(1.2)),
+                 legend.direction="vertical"),
+         dpi=600, width=12, height=8.1, units="in")
+}
 
 ### Manuscript Table 2:
-Tbl2_2023 <- MSPEs_Results_2023 %>% 
-  left_join(Player_pool_2023 %>% dplyr::select(Player_ID,Shift_Perc_2022)) %>%
-  dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
-  dplyr::select(Name_Disp, `Shift Rate (2022)`, Outcome, Diff_2023, PVal) %>%
-  dplyr::rename(Player=Name_Disp, Estimate=Diff_2023, p=PVal) %>%
-  pivot_wider(names_from=Outcome, values_from=c("Estimate","p"), names_vary="slowest") %>%
-  dplyr::arrange(desc(`Shift Rate (2022)`))
+for (type in types) {
+  assign(x=paste0("Tbl2_",type),
+         value = get(x=paste0("MSPEs_Results_",type)) %>%
+    dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
+    dplyr::select(c("Name_Disp","Shift Rate (2022)","Outcome",starts_with("Diff"),"PVal")) %>%
+    dplyr::rename(Player=Name_Disp, p=PVal) %>%
+    dplyr::rename_with(.fn=~gsub("Diff","Est",.x),
+                       .cols=starts_with("Diff")) %>%
+    dplyr::select(-contains("Total")) %>%
+    pivot_wider(names_from=Outcome,
+                values_from=c(starts_with("Est"),"p"), names_vary="slowest") %>%
+    dplyr::arrange(desc(`Shift Rate (2022)`)))
+  
+  write.csv(x=get(paste0("Tbl2_",type)) %>%
+              dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
+                                   .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
+            file=paste0(MSoutdir,"Table2-",gsub("_","-",type),".csv"),
+            row.names=FALSE)
+}
 
-Tbl2_2023_24 <- MSPEs_Results_2023_24 %>% 
-  left_join(Player_pool_2023_24 %>% dplyr::select(Player_ID,Shift_Perc_2022)) %>%
-  dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
-  dplyr::select(Name_Disp, `Shift Rate (2022)`, Outcome, Diff_2023, Diff_2024, PVal) %>%
-  dplyr::rename(Player=Name_Disp, Est_2023=Diff_2023, Est_2024=Diff_2024, p=PVal) %>%
-  pivot_wider(names_from=Outcome, values_from=c("Est_2023","Est_2024","p"), names_vary="slowest") %>%
-  dplyr::arrange(desc(`Shift Rate (2022)`))
-
-Tbl2_2024 <- MSPEs_Results_2024 %>% 
-  left_join(Player_pool_2024 %>% dplyr::select(Player_ID,Shift_Perc_2022)) %>%
-  dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
-  dplyr::select(Name_Disp, `Shift Rate (2022)`, Outcome, Diff_2024, PVal) %>%
-  dplyr::rename(Player=Name_Disp, Estimate=Diff_2024, p=PVal) %>%
-  pivot_wider(names_from=Outcome, values_from=c("Estimate","p"), names_vary="slowest") %>%
-  dplyr::arrange(desc(`Shift Rate (2022)`))
-
-write.csv(x=Tbl2_2023 %>%
-            dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
-                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(MSoutdir,"Table2-2023.csv"),
-          row.names=FALSE)
-
-write.csv(x=Tbl2_2023_24 %>%
-            dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
-                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(MSoutdir,"Table2-2023-24.csv"),
-          row.names=FALSE)
-
-write.csv(x=Tbl2_2024 %>%
-            dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
-                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(MSoutdir,"Table2-2024.csv"),
-          row.names=FALSE)
-
-SCs_Results_2023 %>% dplyr::filter(Season==Interv) %>%
-  group_by(Outcome,Placebo_Unit) %>%
-  dplyr::summarize(Mean=mean(Diff), Median=median(Diff),
-                   Prop.Pos=mean(Diff > 0))
-
-SCs_Results_2023_24 %>% dplyr::filter(Season >= Interv) %>%
-  group_by(Name,Player_ID,Outcome,Placebo_Unit) %>%
-  dplyr::summarize(Diff_Total=sum(Diff)) %>%
-  ungroup() %>% group_by(Outcome,Placebo_Unit) %>%
-  dplyr::summarize(Mean=mean(Diff_Total), Median=median(Diff_Total),
-                   Prop.Pos=mean(Diff_Total > 0))
-
-SCs_Results_2024 %>% dplyr::filter(Season == 2024) %>%
-  group_by(Outcome,Placebo_Unit) %>%
-  dplyr::summarize(Mean=mean(Diff), Median=median(Diff),
-                   Prop.Pos=mean(Diff > 0))
+for (type in types) {
+  get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(Season %in% Interv) %>%
+    group_by(Outcome, Season, Placebo_Unit) %>%
+    dplyr::summarize(Mean=mean(Diff),
+                     Median=median(Diff),
+                     Prop.Pos=mean(Diff > 0))
+}
 
 ### Manuscript Figure 3:
-ggsave(filename=paste0(MSoutdir,"Figure3-2023.png"),
-       plot=plot_SC_ests_all("OBP", SCs_Results_2023, LW=0.8, tagval="A. ") + 
-         plot_SC_ests_all("OPS", SCs_Results_2023, LW=0.8, tagval="B. ") + 
-         plot_SC_ests_all("wOBA", SCs_Results_2023, LW=0.8, tagval="C. ") + 
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.position="inside",
-               legend.background=element_rect(fill="white", color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=12, height=8.1, units="in")
-
-ggsave(filename=paste0(MSoutdir,"Figure3-2023-24.png"),
-       plot=plot_SC_ests_all("OBP", SCs_Results_2023_24, LW=0.8, tagval="A. ") + 
-         plot_SC_ests_all("OPS", SCs_Results_2023_24, LW=0.8, tagval="B. ") + 
-         plot_SC_ests_all("wOBA", SCs_Results_2023_24, LW=0.8, tagval="C. ") + 
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.position="inside",
-               legend.background=element_rect(fill="white", color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=12, height=8.1, units="in")
-
-ggsave(filename=paste0(MSoutdir,"Figure3-2024.png"),
-       plot=plot_SC_ests_all("OBP", SCs_Results_2024, LW=0.8, tagval="A. ") + 
-         plot_SC_ests_all("OPS", SCs_Results_2024, LW=0.8, tagval="B. ") + 
-         plot_SC_ests_all("wOBA", SCs_Results_2024, LW=0.8, tagval="C. ") + 
-         guide_area() +
-         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
-         theme(legend.position="inside",
-               legend.background=element_rect(fill="white", color="grey50"),
-               legend.text=element_text(size=rel(1.2)),
-               legend.title=element_text(size=rel(1.2)),
-               legend.direction="vertical"),
-       dpi=600, width=12, height=8.1, units="in")
+for (type in types) {
+  ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
+         plot=plot_SC_ests_all("OBP", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="A. ") + 
+           plot_SC_ests_all("OPS", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="B. ") + 
+           plot_SC_ests_all("wOBA", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="C. ") + 
+           guide_area() +
+           plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+           theme(legend.position="inside",
+                 legend.background=element_rect(fill="white", color="grey50"),
+                 legend.text=element_text(size=rel(1.2)),
+                 legend.title=element_text(size=rel(1.2)),
+                 legend.direction="vertical"),
+         dpi=600, width=12, height=8.1, units="in")
+}
 
 ### Full Set of Outcome Trajectory plots by Player and by Shift Category:
 Trajoutdir <- "figs/Trajectories/"
@@ -305,12 +212,11 @@ for (outval in BStats$stat) {
 }
 
 ### Full Set of all-player SCM estimate plots:
-Plot_SC_Res <- function(outname, Pool) {
-  load(file=paste0("res/",outname,"-Results-Complete.Rda"))
-  SCMoutdir <- paste0("figs/",outname," Estimates/")
+Plot_SC_Res <- function(type) {
+  SCMoutdir <- paste0("figs/SC-",gsub("_","-",type)," Estimates/")
   for (outval in BStats %>% dplyr::filter(Use) %>% dplyr::pull(stat)) {
     ggsave(filename=paste0(SCMoutdir,"SCM-plot-",outval,".png"),
-           plot=plot_SC_ests_all("OBP", SCs_Results) + 
+           plot=plot_SC_ests_all(outval, get(x=paste0("SCs_Results_",type))) + 
              theme(legend.position="bottom",
                    legend.background=element_rect(fill="white", color="grey50"),
                    legend.direction="horizontal"),
