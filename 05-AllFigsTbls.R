@@ -121,13 +121,18 @@ for (type in c(types,"2023_inunit","2022_intime")) {
             row.names=FALSE)
 }
 
-for (type in c(types,"2023_inunit","2022_intime")) {
+for (type in c(types,"2023_inunit")) {
   get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(Season %in% Interv) %>%
     group_by(Outcome, Season, Placebo_Unit) %>%
     dplyr::summarize(Mean=mean(Diff),
                      Median=median(Diff),
                      Prop.Pos=mean(Diff > 0))
 }
+SCs_Results_2022_intime %>% dplyr::filter(Season==2022) %>%
+  group_by(Outcome, Season, Placebo_Unit) %>%
+  dplyr::summarize(Mean=mean(Diff),
+                   Median=median(Diff),
+                   Prop.Pos=mean(Diff > 0))
 
 ### Manuscript Figure 3:
 for (type in c(types,"2023_inunit","2022_intime")) {
@@ -144,6 +149,25 @@ for (type in c(types,"2023_inunit","2022_intime")) {
                  legend.direction="vertical"),
          dpi=600, width=12, height=8.1, units="in")
 }
+ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
+       plot=(plot_SC_ests_all("OBP", SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
+                              LW=0.8, tagval="A. ") + 
+          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2022))) +
+         (plot_SC_ests_all("OPS", SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
+                           LW=0.8, tagval="B. ") + 
+          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted")) +
+         (plot_SC_ests_all("wOBA", SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
+                           LW=0.8, tagval="C. ") + 
+          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted")) +
+         guide_area() +
+         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+         theme(legend.position="inside",
+               legend.background=element_rect(fill="white", color="grey50"),
+               legend.text=element_text(size=rel(1.2)),
+               legend.title=element_text(size=rel(1.2)),
+               legend.direction="vertical"),
+       dpi=600, width=12, height=8.1, units="in")
 
 ### Full Set of Outcome Trajectory plots by Player and by Shift Category:
 Trajoutdir <- "figs/Trajectories/"

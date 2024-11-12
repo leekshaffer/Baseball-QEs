@@ -447,8 +447,8 @@ SC_Res_23_inunit <- Run_SC(Player_pool_2023-inunit,
                     outname="SC-2023-inunit", Player_Weight_Plots=FALSE)
 
 ### In-Time: for 2022
-Player_pool_2022 <- Player_pool_2023
-SC_Res_22 <- Run_SC(Player_pool_2022, S_cols_2023, 15:19, Res_Yrs=2022,
+Player_pool_2022_intime <- Player_pool_2023
+SC_Res_22 <- Run_SC(Player_pool_2022_intime, S_cols_2023, 15:19, Res_Yrs=2022,
                     outname="SC-2022-intime",
                     Player_Weight_Plots=FALSE)
 
