@@ -93,7 +93,8 @@ Player_pool_avg <- B.250_pool %>%
 
 ### Run the Synthetic Controls for desired pool:
 Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19, 
-                   Res_Yrs=Interv, outname) { 
+                   Res_Yrs=Interv, outname,
+                   Player_Weight_Plots=TRUE) { 
   ## Function to run it for different pools of players
   ## Make sure S_cols_all matches restrictions on pool and S_cols_check is in order of data set
   SCs_Full <- NULL ## Clear any previous saved info
@@ -146,16 +147,23 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
                          Singles2021=`1B`,
                          HR2021=HR,
                          BBPerc2021=`BB percent`,
-                         KPerc2021=`K percent`) %>%
-      generate_predictor(time_window=2022,
-                         Age2022=Age,
-                         val2022=get(statval),
-                         PA2022=PA,
-                         H2022=H,
-                         Singles2022=`1B`,
-                         HR2022=HR,
-                         BBPerc2022=`BB percent`,
-                         KPerc2022=`K percent`)
+                         KPerc2021=`K percent`) 
+    if (2022 %in% Res_Yrs) {
+      synth_player <- synth_player %>%
+        generate_predictor(time_window=2021,
+                           Age2021=Age)
+    } else {
+      synth_player <- synth_player %>%
+        generate_predictor(time_window=2022,
+                           Age2022=Age,
+                           val2022=get(statval),
+                           PA2022=PA,
+                           H2022=H,
+                           Singles2022=`1B`,
+                           HR2022=HR,
+                           BBPerc2022=`BB percent`,
+                           KPerc2022=`K percent`)
+    }
     if (!identical(Seasons_check, integer(0))) {
       if (length(Seasons_check)==1) {
         year <- as.numeric(paste0("20",Seasons_check))
@@ -186,7 +194,7 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
       }
     }
     synth_player <- synth_player %>%
-      generate_weights(optimization_window=as.numeric(paste0("20",c(Seasons_check,S_cols_all)))[as.numeric(paste0("20",c(Seasons_check,S_cols_all))) < Interv],
+      generate_weights(optimization_window=as.numeric(paste0("20",c(Seasons_check,S_cols_all)))[as.numeric(paste0("20",c(Seasons_check,S_cols_all))) < min(Res_Yrs)],
                        margin_ipop = .02,sigf_ipop = 7,bound_ipop = 6)
     for (index in 1:length(synth_player$`.meta`)) {
       synth_player$`.meta`[[index]]$outcome <- statval
@@ -194,9 +202,11 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
     synth_player <- synth_player %>%
       generate_control()
     
-    WtPlot <- synth_player %>% plot_weights() + theme_bw()
-    ggsave(filename=paste0("figs/Players-",outname,"/",Disp_name,"/Weights-",statval,".png"),
-           plot=WtPlot)
+    if (Player_Weight_Plots) {
+      WtPlot <- synth_player %>% plot_weights() + theme_bw()
+      ggsave(filename=paste0("figs/Players-",outname,"/",Disp_name,"/Weights-",statval,".png"),
+             plot=WtPlot)
+    }
     
     ## Pull results and save:
     if (is.null(Weights_Unit)) {
@@ -216,7 +226,7 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="High") %>% pull(Player_ID)) {
     SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
                                dplyr::mutate(Outcome=statval, 
                                              Diff=real_y-synth_y,
-                                             Intervention=time_unit >= Interv) %>% 
+                                             Intervention=time_unit >= min(Res_Yrs)) %>% 
                                dplyr::rename(Season=time_unit, Observed=real_y,
                                              Synthetic=synth_y) %>%
                                dplyr::select(Outcome,Season,Intervention,
@@ -348,7 +358,7 @@ for (ID in Pool %>% dplyr::filter(Shift_Cat_2022=="Low") %>% pull(Player_ID))  {
     SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
                                dplyr::mutate(Outcome=statval, 
                                              Diff=real_y-synth_y,
-                                             Intervention=time_unit >= Interv))
+                                             Intervention=time_unit >= min(Res_Yrs)))
   }
   SCs <- SCs %>% dplyr::rename(Season=time_unit,
                                Observed=real_y,
@@ -428,6 +438,20 @@ SC_Res_24 <- Run_SC(Player_pool_2024, S_cols_2024, 15:19, Res_Yrs=2024,
 SC_Res_23_24 <- Run_SC(Player_pool_2023_24, S_cols_2023_24, 15:19, Res_Yrs=2023:2024,
                        outname="SC-2023-24")
 
+## Robustness Checks
+### In-Unit: for Shift rates 15--30%
+Player_pool_2023_inunit <- Player_pool_2023 %>% dplyr::filter(Shift_Perc_2022 < 30) %>%
+  dplyr::mutate(Shift_Cat_2022=if_else(Shift_Cat_2022=="Low",Shift_Cat_2022,"High"))
+SC_Res_23_inunit <- Run_SC(Player_pool_2023-inunit, 
+                        S_cols_2023, 15:19, Res_Yrs=2023,
+                    outname="SC-2023-inunit", Player_Weight_Plots=FALSE)
+
+### In-Time: for 2022
+Player_pool_2022 <- Player_pool_2023
+SC_Res_22 <- Run_SC(Player_pool_2022, S_cols_2023, 15:19, Res_Yrs=2022,
+                    outname="SC-2022-intime",
+                    Player_Weight_Plots=FALSE)
+
 
 ## Graphical Parameters:
 BStats <- BStats %>% 
@@ -447,7 +471,8 @@ BStats <- BStats %>%
   dplyr::select(stat,Use,min,max,diff_min,diff_max)
 
 ### Save internal data and parameters data:
-save(list=c("Player_pool_2023", "Player_pool_2024", "Player_pool_2023_24", 
+save(list=c("Player_pool_2023", "Player_pool_2024", "Player_pool_2023_24",
+            "Player_pool_2023_inunit", "Player_pool_2022_intime",
             "B.250_pool", "Player_pool_avg", "BStats"),
      file="int/Player_pool_data.Rda")
 

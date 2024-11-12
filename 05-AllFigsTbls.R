@@ -13,7 +13,7 @@ types <- c("2023","2024","2023_24") ## The analysis year types
 load(file="int/DID_data.Rda")
 load(file="int/Player_pool_data.Rda")
 
-for (type in types) {
+for (type in c(types,"2023_inunit","2022_intime")) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat_2022, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
@@ -101,7 +101,7 @@ for (type in types) {
 }
 
 ### Manuscript Table 2:
-for (type in types) {
+for (type in c(types,"2023_inunit","2022_intime")) {
   assign(x=paste0("Tbl2_",type),
          value = get(x=paste0("MSPEs_Results_",type)) %>%
     dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
@@ -121,7 +121,7 @@ for (type in types) {
             row.names=FALSE)
 }
 
-for (type in types) {
+for (type in c(types,"2023_inunit","2022_intime")) {
   get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(Season %in% Interv) %>%
     group_by(Outcome, Season, Placebo_Unit) %>%
     dplyr::summarize(Mean=mean(Diff),
@@ -130,7 +130,7 @@ for (type in types) {
 }
 
 ### Manuscript Figure 3:
-for (type in types) {
+for (type in c(types,"2023_inunit","2022_intime")) {
   ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
          plot=plot_SC_ests_all("OBP", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="A. ") + 
            plot_SC_ests_all("OPS", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="B. ") + 
