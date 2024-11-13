@@ -126,16 +126,18 @@ for (type in c(types,"2023_inunit")) {
     group_by(Outcome, Season, Placebo_Unit) %>%
     dplyr::summarize(Mean=mean(Diff),
                      Median=median(Diff),
+                     SD=sd(Diff),
                      Prop.Pos=mean(Diff > 0))
 }
 SCs_Results_2022_intime %>% dplyr::filter(Season==2022) %>%
   group_by(Outcome, Season, Placebo_Unit) %>%
   dplyr::summarize(Mean=mean(Diff),
                    Median=median(Diff),
+                   SD=sd(Diff),
                    Prop.Pos=mean(Diff > 0))
 
 ### Manuscript Figure 3:
-for (type in c(types,"2023_inunit","2022_intime")) {
+for (type in c(types)) {
   ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
          plot=plot_SC_ests_all("OBP", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="A. ") + 
            plot_SC_ests_all("OPS", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="B. ") + 
@@ -149,17 +151,67 @@ for (type in c(types,"2023_inunit","2022_intime")) {
                  legend.direction="vertical"),
          dpi=600, width=12, height=8.1, units="in")
 }
-ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
-       plot=(plot_SC_ests_all("OBP", SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
-                              LW=0.8, tagval="A. ") + 
+ggsave(filename=paste0(MSoutdir,"Figure3-2023-inunit.png"),
+       plot=(plot_SC_ests(statval="OBP", SC.dat=SCs_Results_2023_inunit,
+                          LegName="Analysis Type",
+                          LegVar="Placebo_Unit",
+                          LegLabs=c("In-Unit Placebo Players (15% < 2022 Shift Rate \U2264 30%)",
+                                    "True Placebo Players (2022 Shift Rate \U2264 15%)"), 
+                          LegBreaks=c(FALSE,TRUE),
+                          LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                          LegAlpha=c(1,0.5), 
+                          LegLTY=c("solid","longdash"), 
+                          title=paste0("SCM estimates for OBP for all included players"),
+                          LW=0.8, tagval="A. ") + 
+               geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
+               coord_cartesian(xlim=c(2015,2022))) +
+         (plot_SC_ests(statval="OPS", SC.dat=SCs_Results_2023_inunit, 
+                       LegName="Analysis Type",
+                       LegVar="Placebo_Unit",
+                       LegLabs=c("In-Unit Placebo Players (15% < 2022 Shift Rate \U2264 30%)",
+                                 "True Placebo Players (2022 Shift Rate \U2264 15%)"), 
+                       LegBreaks=c(FALSE,TRUE),
+                       LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                       LegAlpha=c(1,0.5), 
+                       LegLTY=c("solid","longdash"), 
+                       title=paste0("SCM estimates for OPS for all included players"),
+                       LW=0.8, tagval="B. ") + 
+            geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2022))) +
+         (plot_SC_ests(statval="wOBA", SC.dat=SCs_Results_2023_inunit,
+                       LegName="Analysis Type",
+                       LegVar="Placebo_Unit",
+                       LegLabs=c("In-Unit Placebo Players (15% < 2022 Shift Rate \U2264 30%)",
+                                 "True Placebo Players (2022 Shift Rate \U2264 15%)"), 
+                       LegBreaks=c(FALSE,TRUE),
+                       LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                       LegAlpha=c(1,0.5), 
+                       LegLTY=c("solid","longdash"), 
+                       title=paste0("SCM estimates for wOBA for all included players"),
+                       LW=0.8, tagval="C. ") + 
+            geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2022))) +
+         guide_area() +
+         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+         theme(legend.position="inside",
+               legend.background=element_rect(fill="white", color="grey50"),
+               legend.text=element_text(size=rel(1.2)),
+               legend.title=element_text(size=rel(1.2)),
+               legend.direction="vertical"),
+       dpi=600, width=12, height=8.1, units="in")
+ggsave(filename=paste0(MSoutdir,"Figure3-2022-intime.png"),
+       plot=(plot_SC_ests_all(statval="OBP", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022),
+                          LW=0.8, tagval="A. ") + 
           geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
             coord_cartesian(xlim=c(2015,2022))) +
-         (plot_SC_ests_all("OPS", SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
+         (plot_SC_ests_all(statval="OPS", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
                            LW=0.8, tagval="B. ") + 
-          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted")) +
-         (plot_SC_ests_all("wOBA", SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022), 
+          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2022))) +
+         (plot_SC_ests_all(statval="wOBA", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022),
                            LW=0.8, tagval="C. ") + 
-          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted")) +
+          geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2022))) +
          guide_area() +
          plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
          theme(legend.position="inside",
