@@ -93,13 +93,15 @@ plot_Traj <- function(statval, Traj.dat,
     plot <- plot +
       scale_y_continuous(name=paste0("Average player ",statval),
                          limits=unlist(BStats[BStats$stat==statval,c("min","max")]),
-                         labels = scales::label_number(accuracy = 0.001)) +
+                         labels = scales::label_number(accuracy = 0.001),
+                         n.breaks=6) +
       coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")]))
       
   } else {
     plot <- plot +
       scale_y_continuous(name=paste0("Average player ",statval),
-                         labels = scales::label_number(accuracy = 0.001))
+                         labels = scales::label_number(accuracy = 0.001),
+                         n.breaks=6)
   }
     plot <- plot + 
       geom_vline(xintercept=Interv_start-0.5, color="grey50", linetype="dashed") +
@@ -155,7 +157,8 @@ plot_Comp <- function(statval, SC.dat, display_name, tagval=NULL) {
                        minor_breaks=NULL) +
     scale_y_continuous(name=statval,
                        limits=unlist(BStats[BStats$stat==statval,c("min","max")]),
-                       labels = scales::label_number(accuracy = 0.001)) +
+                       labels = scales::label_number(accuracy = 0.001),
+                       n.breaks=6) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("min","max")])) +
     geom_vline(xintercept=Interv_start-0.5, color="grey50", linetype="dashed") +
     labs(title=paste0(tagval,"Synthetic and Observed ",statval," for ",display_name))

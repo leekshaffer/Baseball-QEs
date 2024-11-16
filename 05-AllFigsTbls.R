@@ -163,8 +163,7 @@ ggsave(filename=paste0(MSoutdir,"Figure3-2023-inunit.png"),
                           LegLTY=c("solid","longdash"), 
                           title=paste0("SCM estimates for OBP for all included players"),
                           LW=0.8, tagval="A. ") + 
-               geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
-               coord_cartesian(xlim=c(2015,2022))) +
+               coord_cartesian(xlim=c(2015,2023))) +
          (plot_SC_ests(statval="OPS", SC.dat=SCs_Results_2023_inunit, 
                        LegName="Analysis Type",
                        LegVar="Placebo_Unit",
@@ -176,8 +175,7 @@ ggsave(filename=paste0(MSoutdir,"Figure3-2023-inunit.png"),
                        LegLTY=c("solid","longdash"), 
                        title=paste0("SCM estimates for OPS for all included players"),
                        LW=0.8, tagval="B. ") + 
-            geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
-            coord_cartesian(xlim=c(2015,2022))) +
+            coord_cartesian(xlim=c(2015,2023))) +
          (plot_SC_ests(statval="wOBA", SC.dat=SCs_Results_2023_inunit,
                        LegName="Analysis Type",
                        LegVar="Placebo_Unit",
@@ -189,8 +187,7 @@ ggsave(filename=paste0(MSoutdir,"Figure3-2023-inunit.png"),
                        LegLTY=c("solid","longdash"), 
                        title=paste0("SCM estimates for wOBA for all included players"),
                        LW=0.8, tagval="C. ") + 
-            geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
-            coord_cartesian(xlim=c(2015,2022))) +
+            coord_cartesian(xlim=c(2015,2023))) +
          guide_area() +
          plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
          theme(legend.position="inside",
@@ -385,3 +382,9 @@ for (type in types) {
          dpi=600, width=12, height=8.1, units="in")
 }
 
+lm(Diff~Shift_Perc_2022,
+   data=SCs_Results_2023 %>% dplyr::filter(Intervention, !Placebo_Unit, Outcome=="OBP"))
+lm(Diff~Shift_Perc_2022,
+   data=SCs_Results_2023 %>% dplyr::filter(Intervention, !Placebo_Unit, Outcome=="OPS"))
+lm(Diff~Shift_Perc_2022,
+   data=SCs_Results_2023 %>% dplyr::filter(Intervention, !Placebo_Unit, Outcome=="wOBA"))
