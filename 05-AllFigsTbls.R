@@ -85,7 +85,20 @@ for (type in types) {
   Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
   Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
   Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
+  
+  assign(x=paste0("Tbl2_",type),
+         value=Weights_Unit %>% 
+           dplyr::filter(pmax(OBP_weight,OPS_weight,wOBA_weight) > 0.001) %>% 
+           dplyr::mutate(across(.cols=contains("weight"), 
+                                .fns=~ifelse(.x < 0.001, NA, .x))) %>%
+           dplyr::arrange(desc(OBP_weight)))
+  
   SCs %>% dplyr::filter(Intervention)
+  write.csv(x=get(paste0("Tbl2_",type)) %>%
+              dplyr::mutate(across(.cols=contains("weight"),
+                                   .fns=~format(round(.x*100, digits=0), nsmall=0))),
+            file=paste0(MSoutdir,"Table2-",gsub("_","-",type),".csv"),
+            row.names=FALSE)
   ggsave(filename=paste0(MSoutdir,"Figure2-",gsub("_","-",type),".png"),
          plot=plot_Comp("OBP", get(x=paste0("SCs_Results_",type)), Target, "A. ") +
            plot_Comp("OPS", get(x=paste0("SCs_Results_",type)), Target, "B. ") +
@@ -100,9 +113,9 @@ for (type in types) {
          dpi=600, width=12, height=8.1, units="in")
 }
 
-### Manuscript Table 2:
+### Manuscript Table 3:
 for (type in c(types,"2023_inunit","2022_intime")) {
-  assign(x=paste0("Tbl2_",type),
+  assign(x=paste0("Tbl3_",type),
          value = get(x=paste0("MSPEs_Results_",type)) %>%
     dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
     dplyr::select(c("Name_Disp","Shift Rate (2022)","Outcome",starts_with("Diff"),"PVal")) %>%
@@ -114,10 +127,10 @@ for (type in c(types,"2023_inunit","2022_intime")) {
                 values_from=c(starts_with("Est"),"p"), names_vary="slowest") %>%
     dplyr::arrange(desc(`Shift Rate (2022)`)))
   
-  write.csv(x=get(paste0("Tbl2_",type)) %>%
+  write.csv(x=get(paste0("Tbl3_",type)) %>%
               dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
                                    .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-            file=paste0(MSoutdir,"Table2-",gsub("_","-",type),".csv"),
+            file=paste0(MSoutdir,"Table3-",gsub("_","-",type),".csv"),
             row.names=FALSE)
 }
 

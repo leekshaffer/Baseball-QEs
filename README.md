@@ -1,6 +1,7 @@
 # Baseball-QEs
 
 Created: August 16, 2024
+Last Updated: November 22, 2024
 
 Methods and analysis for the impact of rule changes on MLB and its players, using quasi-experimental methods and panel data.
 
