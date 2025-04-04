@@ -217,17 +217,31 @@ plot_SC_ests_all <- function(statval, SC.dat, LW=1, tagval=NULL) {
 ## SCM estimates by Shift Rate plots:
 plot_SC_Shift <- function(statval, SC.dat,
                          LW=1,
+                         Placebo_Inc=FALSE,
                          tagval=NULL) {
-  ggplot(data=SC.dat %>% dplyr::filter(Outcome==statval,Intervention,!Placebo_Unit),
+  dat_use <- SC.dat %>%
+    dplyr::filter(Outcome==statval,Intervention)
+  if (!Placebo_Inc) {
+    dat_use <- dat_use %>% dplyr::filter(!Placebo_Unit)
+  }
+  plot <- ggplot(data=dat_use,
          mapping=aes(x=Shift_Perc_2022, y=Diff)) +
-    geom_point() + geom_smooth(method=lm, se=FALSE,
-                               linewidth=LW, color="gray50", linetype="dashed") +
+    geom_point() + geom_smooth(method="loess", se=TRUE,
+                               linewidth=LW, color="blue", linetype="dashed") +
     scale_x_continuous(name="Shift Rate (2022)",
-                       labels=function(x) paste0(x,"%")) +
+                       breaks=seq(0,90,by=15),
+                       labels=c("0%","15%","30%","45%","60%","75%","90%"),
+                       minor_breaks=seq(0,100,by=5)) +
+                       # labels=function(x) paste0(x,"%")) +
     scale_y_continuous(name="Difference, Synthetic \U2013 Observed",
                        limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")]),
                        labels = scales::label_number(accuracy = 0.001)) +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
     theme_bw() +
     labs(title=paste0(tagval,"SCM estimates for ",statval," by 2022 Shift Rate"))
+  if (Placebo_Inc) {
+    plot + geom_vline(xintercept=15, linewidth=LW, linetype="dotted", color="gray50")
+  } else {
+    plot
+  }
 }

@@ -446,6 +446,14 @@ SC_Res_23_inunit <- Run_SC(Player_pool_2023-inunit,
                         S_cols_2023, 15:19, Res_Yrs=2023,
                     outname="SC-2023-inunit", Player_Weight_Plots=FALSE)
 
+### Full player list:
+Player_pool_2023_full <- Player_pool_2023 %>% 
+  dplyr::mutate(Shift_Cat_2022=if_else(Shift_Cat_2022=="Low",
+                                       "Low","High"))
+SC_Res_23_full <- Run_SC(Player_pool_2023_full, 
+                           S_cols_2023, 15:19, Res_Yrs=2023,
+                           outname="SC-2023-full", Player_Weight_Plots=FALSE)
+
 ### In-Time: for 2022
 Player_pool_2022_intime <- Player_pool_2023
 SC_Res_22 <- Run_SC(Player_pool_2022_intime, S_cols_2023, 15:19, Res_Yrs=2022,
@@ -472,7 +480,7 @@ BStats <- BStats %>%
 
 ### Save internal data and parameters data:
 save(list=c("Player_pool_2023", "Player_pool_2024", "Player_pool_2023_24",
-            "Player_pool_2023_inunit", "Player_pool_2022_intime",
+            "Player_pool_2023_inunit", "Player_pool_2023_full", "Player_pool_2022_intime",
             "B.250_pool", "Player_pool_avg", "BStats"),
      file="int/Player_pool_data.Rda")
 

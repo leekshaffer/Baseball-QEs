@@ -13,7 +13,7 @@ types <- c("2023","2024","2023_24") ## The analysis year types
 load(file="int/DID_data.Rda")
 load(file="int/Player_pool_data.Rda")
 
-for (type in c(types,"2023_inunit","2022_intime")) {
+for (type in c(types,"2023_inunit","2022_intime","2023_full")) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat_2022, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
@@ -383,14 +383,25 @@ for (type in types) {
 }
 
 ### Manuscript Figure 4:
-for (type in types) {
+for (type in c(types,"2023_full")) {
   ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
          plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
-                            LW=0.8, tagval="A. ") + 
+                            LW=0.8, Placebo_Inc=FALSE, tagval="A. ") + 
            plot_SC_Shift("OPS", get(x=paste0("SCs_Results_",type)),
-                         LW=0.8, tagval="B. ") + 
+                         LW=0.8, Placebo_Inc=FALSE, tagval="B. ") + 
            plot_SC_Shift("wOBA", get(x=paste0("SCs_Results_",type)),
-                         LW=0.8, tagval="C. ") + 
+                         LW=0.8, Placebo_Inc=FALSE, tagval="C. ") + 
+           plot_layout(nrow=2, ncol=2, byrow=TRUE),
+         dpi=600, width=12, height=8.1, units="in")
+}
+for (type in c("2023_full")) {
+  ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
+         plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
+                            LW=0.8, Placebo_Inc=TRUE, tagval="A. ") + 
+           plot_SC_Shift("OPS", get(x=paste0("SCs_Results_",type)),
+                         LW=0.8, Placebo_Inc=TRUE, tagval="B. ") + 
+           plot_SC_Shift("wOBA", get(x=paste0("SCs_Results_",type)),
+                         LW=0.8, Placebo_Inc=TRUE, tagval="C. ") + 
            plot_layout(nrow=2, ncol=2, byrow=TRUE),
          dpi=600, width=12, height=8.1, units="in")
 }
