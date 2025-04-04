@@ -6,8 +6,8 @@
 ## SC analyses for each target player use as a donor pool
 ## players with min. 250 PA in all seasons in which target player had min. 250 PA
 
-require(tidyverse)
-require(tidysynth)
+library(tidyverse)
+library(tidysynth)
 
 ## Hitting stats with data:
 BStats <- tibble(stat=c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS","wOBA"))

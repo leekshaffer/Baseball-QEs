@@ -97,7 +97,8 @@ Sav.Shifts <- Sav.Shifts %>% group_by(Season,Name) %>%
                 PA_Shade=PA_Shade_total, PA_NoShade=PA_NoShade_total,
                 wOBA_Shade=wOBA_Shade_total, wOBA_NoShade=wOBA_NoShade_total) %>%
   dplyr::mutate(PA_Shift_Percent=PA_Shift/PA*100, PA_NoShift_Percent=PA_NoShift/PA*100,
-                PA_Shade_Percent=PA_Shade/PA*100, PA_NoShade_Percent=PA_NoShade/PA*100)
+                PA_Shade_Percent=PA_Shade/PA*100, PA_NoShade_Percent=PA_NoShade/PA*100) %>%
+  ungroup()
 ### Drop Jr./Sr./III/II
 Sav.Shifts$Name_Match <- sub(" Jr.", "", Sav.Shifts$Name)
 Sav.Shifts$Name_Match <- sub(" Sr.", "", Sav.Shifts$Name_Match)

@@ -9,7 +9,7 @@ types <- c("2023","2024","2023_24") ## The analysis year types
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
 for (type in types) {
-  Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat_2022, 
+  Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
   assign(x=paste0("MSPEs_PRes_",type),
@@ -24,7 +24,7 @@ source("./04-FigureCommands.R", local=TRUE)
 
 ## Lists
 Player_Choices <- unique(bind_rows(Player_pool_2023,Player_pool_2023_24,Player_pool_2024) %>% 
-  dplyr::filter(Shift_Cat_2022=="High") %>% pull(Name_Disp))
+  dplyr::filter(Shift_Cat=="High") %>% pull(Name_Disp))
 BStats_Use <- BStats %>% dplyr::filter(Use)
 All_token_SC <- "-All-"
 All_token_DID <- "-All (Table Only)-"
@@ -417,9 +417,9 @@ server <- function(input, output) {
                            as.numeric(input$AllTargetSeason))
         plot_Traj(statval=input$SCAllInStat,
                   Traj.dat=B.250_pool %>% 
-                    dplyr::filter(Shift_Cat_2022 != "Medium",
+                    dplyr::filter(Shift_Cat != "Medium",
                                   Season <= MaxSeason),
-                  CatVar="Shift_Cat_2022",
+                  CatVar="Shift_Cat",
                   CatName=NULL,
                   CatBreaks=c("High","Low"),
                   CatLabs=c("Target Players (2022 Shift Rate \U2265 75%)",

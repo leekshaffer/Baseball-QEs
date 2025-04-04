@@ -14,7 +14,7 @@ load(file="int/DID_data.Rda")
 load(file="int/Player_pool_data.Rda")
 
 for (type in c(types,"2023_inunit","2022_intime","2023_full")) {
-  Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat_2022, 
+  Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
   assign(x=paste0("MSPEs_PRes_",type),
@@ -238,8 +238,8 @@ for (outval in BStats$stat) {
   ## With a line for each player:
   ggsave(filename=paste0(Trajoutdir,"Traj-ByPlayer-plot-",outval,".png"),
          plot=plot_Traj(statval=outval,
-                        Traj.dat=B.250_pool %>% dplyr::filter(Shift_Cat_2022 != "Medium"),
-                        CatVar="Shift_Cat_2022",
+                        Traj.dat=B.250_pool %>% dplyr::filter(Shift_Cat != "Medium"),
+                        CatVar="Shift_Cat",
                         CatName=NULL,
                         CatBreaks=c("High","Low"),
                         CatLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
@@ -258,7 +258,7 @@ for (outval in BStats$stat) {
   ggsave(filename=paste0(Trajoutdir,"Traj-ByCategory-fixed-plot-",outval,".png"),
          plot=plot_Traj(statval=outval,
                         Traj.dat=Player_pool_avg,
-                        CatVar="Shift_Cat_2022",
+                        CatVar="Shift_Cat",
                         CatName=NULL,
                         CatBreaks=c("High","Medium","Low"),
                         CatLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
@@ -279,7 +279,7 @@ for (outval in BStats$stat) {
   ggsave(filename=paste0(Trajoutdir,"Traj-ByCategory-free-plot-",outval,".png"),
          plot=plot_Traj(statval=outval,
                         Traj.dat=Player_pool_avg,
-                        CatVar="Shift_Cat_2022",
+                        CatVar="Shift_Cat",
                         CatName=NULL,
                         CatBreaks=c("High","Medium","Low"),
                         CatLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
