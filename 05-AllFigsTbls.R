@@ -7,7 +7,7 @@ source("04-FigureCommands.R")
 
 MSoutdir <- "figs/Manuscript/"
 Interv <- 2023:2024
-types <- c("2023","2024","2023_24") ## The analysis year types
+types <- c("2023","2024","2023_24") ## The core analysis year types
 
 ## Required data sets:
 load(file="int/DID_data.Rda")
