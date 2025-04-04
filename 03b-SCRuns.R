@@ -23,7 +23,7 @@ Player_pool_2023 <- Create_Pool(Cuts=c(15,75),
 SC_Res_23_full <- Run_SC(Player_pool_2023_full, 
                          21:23, 15:19, Res_Yrs=2023,
                          outname="SC-2023-full",
-                         Player_Weight_Plots=TRUE,
+                         Player_Weight_Plots=FALSE,
                          Stats=Stat_Use)
 
 ## Save a subset of results for the >= 75% cutoff:
@@ -60,6 +60,16 @@ SC_Res_24 <- Run_SC(Player_pool_2024, c(21,22,24), 15:19, Res_Yrs=2024,
 ### In-Unit: for Shift Rate between 15 and 30%
 Player_pool_2023_inunit <- Player_pool_2023_full %>% 
   dplyr::filter(Shift_Perc_2022 <= 30)
+Keep_Names <- Player_pool_2023_inunit %>%
+  dplyr::select(Player_ID) %>%
+  distinct() %>% pull(Player_ID)
+load("res/SC-2023-full-Results-Complete.Rda")
+SCs_Results <- SCs_Results %>% 
+  dplyr::filter(Player_ID %in% Keep_Names)
+MSPEs_Results <- MSPEs_Results %>%
+  dplyr::filter(Player_ID %in% Keep_Names)
+save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
+     file=paste0("res/SC-2023-inunit-Results-Complete.Rda"))
 
 ### In-Time: for 2022
 Player_pool_2022_intime <- Player_pool_2023
@@ -129,8 +139,10 @@ BStats <- BStats %>%
   dplyr::select(stat,Use,min,max,diff_min,diff_max)
 
 ### Save internal data and parameters data:
-save(list=c("Player_pool_2023", "Player_pool_2024", "Player_pool_2023_24",
-            "Player_pool_2023_full",
-            "B.250_pool", "Player_pool_avg", "BStats"),
+save(list=c(paste("Player","pool",
+                  c("2023","2024","2023_24","2023_full","2022_intime","2023_inunit",
+                    "2023_low","2023_high","2023_restrict","avg"),
+                  sep="_"),
+            "B.250_pool", "BStats"),
      file="int/Player_pool_data.Rda")
 

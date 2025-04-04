@@ -5,7 +5,7 @@ library(bslib)
 
 ## Data needed to run:
 Interv <- 2023
-types <- c("2023","2024","2023_24") ## The analysis year types
+types <- c("2023_full","2024","2023_24") ## The analysis year types
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
 for (type in types) {
