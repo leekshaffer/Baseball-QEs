@@ -79,7 +79,7 @@ write.csv(x=Tbl1 %>%
 ### Manuscript Figure 2:
 Target <- "Corey Seager"
 
-for (type in types) {
+for (type in c(types,"2023_full")) {
   print(paste0("Player-specific SCM for: ",Target," in ",gsub("_","-",type)))
   load(file=paste0("res/Players-SC-",gsub("_","-",type),"/Player-SC-",Target,".Rda"))
   Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
