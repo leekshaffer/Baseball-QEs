@@ -523,13 +523,8 @@ server <- function(input, output) {
     SCs_Res_int <- get(paste0("SCs_Results_",
                               gsub("-", "_", input$AllTargetSeason),
                               "_full"))
-    if (input$AllTargetSeason=="2023") {
-      plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
-                  LW=1, Placebo_Inc=TRUE, tagval=NULL)
-    } else {
-      plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
-                    LW=1, Placebo_Inc=FALSE, tagval=NULL)
-    }
+    plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
+                LW=1, Placebo_Inc=TRUE, tagval=NULL)
   })
   
   output$plot3 <- renderPlot({

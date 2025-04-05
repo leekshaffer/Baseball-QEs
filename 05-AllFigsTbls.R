@@ -287,9 +287,9 @@ for (outval in BStats$stat) {
 }
 
 ### Full Set of all-player SCM estimate plots:
-for (type in types_full) {
+for (type in full_types) {
   for (outval in BStats %>% dplyr::filter(Use) %>% dplyr::pull(stat)) {
-    ggsave(filename=paste0("All-Player-SC/",gsub("_","-",type),"-",outval,".png"),
+    ggsave(filename=paste0("figs/All-Player-SC/",gsub("_","-",type),"-",outval,".png"),
            plot=plot_SC_ests_all(outval, get(x=paste0("SCs_Results_",type))) + 
              theme(legend.position="bottom",
                    legend.background=element_rect(fill="white", color="grey50"),
