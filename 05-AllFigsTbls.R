@@ -1,9 +1,8 @@
 ## 05-AllFigsTbls.R
 ## Creation of figures, tables, and key results for manuscript and repository
 
-require(tidyverse)
-require(patchwork)
 source("04-FigureCommands.R")
+library(patchwork)
 
 MSoutdir <- "figs/Manuscript/"
 Interv <- 2023:2024
@@ -13,7 +12,8 @@ types <- c("2023","2024","2023_24") ## The core analysis year types
 load(file="int/DID_data.Rda")
 load(file="int/Player_pool_data.Rda")
 
-for (type in c(types,"2023_inunit","2022_intime","2023_full")) {
+for (type in c(types,"2023_inunit","2022_intime","2023_full",
+               "2023_low","2023_high","2023_restrict")) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
@@ -79,9 +79,9 @@ write.csv(x=Tbl1 %>%
 ### Manuscript Figure 2:
 Target <- "Corey Seager"
 
-for (type in c("2023_24","2024","2023_full")) {
+for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) {
   print(paste0("Player-specific SCM for: ",Target," in ",gsub("_","-",type)))
-  load(file=paste0("res/Players-SC-",gsub("_","-",type),"/Player-SC-",Target,".Rda"))
+  load(file=paste0("res/Players-SC-",gsub("_","-",ifelse(type=="2023","2023-full",type)),"/Player-SC-",Target,".Rda"))
   Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
   Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
   Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
@@ -134,23 +134,8 @@ for (type in c(types,"2023_inunit","2022_intime")) {
             row.names=FALSE)
 }
 
-for (type in c(types,"2023_inunit")) {
-  get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(Season %in% Interv) %>%
-    group_by(Outcome, Season, Placebo_Unit) %>%
-    dplyr::summarize(Mean=mean(Diff),
-                     Median=median(Diff),
-                     SD=sd(Diff),
-                     Prop.Pos=mean(Diff > 0))
-}
-SCs_Results_2022_intime %>% dplyr::filter(Season==2022) %>%
-  group_by(Outcome, Season, Placebo_Unit) %>%
-  dplyr::summarize(Mean=mean(Diff),
-                   Median=median(Diff),
-                   SD=sd(Diff),
-                   Prop.Pos=mean(Diff > 0))
-
 ### Manuscript Figure 3:
-for (type in c(types)) {
+for (type in c(types,"2023_low","2023_high","2023_restrict")) {
   ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
          plot=plot_SC_ests_all("OBP", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="A. ") + 
            plot_SC_ests_all("OPS", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="B. ") + 
@@ -298,7 +283,8 @@ for (outval in BStats$stat) {
 }
 
 ### Full Set of all-player SCM estimate plots:
-for (type in types) {
+for (type in c(types,"2022_intime","2023_inunit","2023_full",
+               "2023_low","2023_high","2023_restrict")) {
   SCMoutdir <- paste0("figs/SC-",gsub("_","-",type)," Estimates/")
   for (outval in BStats %>% dplyr::filter(Use) %>% dplyr::pull(stat)) {
     ggsave(filename=paste0(SCMoutdir,"SCM-plot-",outval,".png"),
@@ -308,8 +294,10 @@ for (type in types) {
                    legend.direction="horizontal"),
            dpi=600, units="in", width=8, height=5)
   }
-  
-  ### Full Set of player-specific SCM estimate plots:
+}
+
+### Full Set of player-specific SCM estimate plots:
+for (type in types) {
   for (ID in unique(get(x=paste0("SCs_Results_",type)) %>% dplyr::filter(!Placebo_Unit) %>% 
                     pull(Player_ID))) {
     ## Info on target player:
@@ -383,7 +371,7 @@ for (type in types) {
 }
 
 ### Manuscript Figure 4:
-for (type in c(types,"2023_full")) {
+for (type in c(types,"2023_low","2023_high","2023_restrict")) {
   ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
          plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
                             LW=0.8, Placebo_Inc=FALSE, tagval="A. ") + 
@@ -406,9 +394,33 @@ for (type in c("2023_full")) {
          dpi=600, width=12, height=8.1, units="in")
 }
 
-lm(Diff~Shift_Perc_2022,
-   data=SCs_Results_2023 %>% dplyr::filter(Intervention, !Placebo_Unit, Outcome=="OBP"))
-lm(Diff~Shift_Perc_2022,
-   data=SCs_Results_2023 %>% dplyr::filter(Intervention, !Placebo_Unit, Outcome=="OPS"))
-lm(Diff~Shift_Perc_2022,
-   data=SCs_Results_2023 %>% dplyr::filter(Intervention, !Placebo_Unit, Outcome=="wOBA"))
+Outcomes <- c("OBP","OPS","wOBA")
+SCs_Results_2022_intime_2022 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2022)
+SCs_Results_2022_intime_2023 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2023)
+SCs_Results_2023_24_2023 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2023)
+SCs_Results_2023_24_2024 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2024)
+Names <- c("2023_full","2023","2023_24_2023","2023_24_2024","2024","2023_inunit","2022_intime_2022","2022_intime_2023","2023_low","2023_high","2023_restrict")
+Models <- paste("SCs","Results", Names,
+                sep="_")
+LM_Res <- NULL
+for (outcome in Outcomes) {
+  Row <- sapply(Models, FUN=function(x) coef(lm(Diff~Shift_Perc_2022,
+                                    data=get(x) %>% dplyr::filter(Intervention, Outcome==outcome)))["Shift_Perc_2022"]*10)
+  names(Row) <- Names
+  LM_Res <- LM_Res %>% bind_rows(Row)
+}
+LM_Res
+
+Summ_Res <- NULL
+for (model in Models) {
+  Summ_Res <- Summ_Res %>% 
+    bind_rows(get(model) %>% dplyr::filter(Intervention) %>%
+                group_by(Outcome,Season,Placebo_Unit) %>%
+                dplyr::summarize(Mean=mean(Diff),
+                                 Median=median(Diff),
+                                 SD=sd(Diff),
+                                 Prop.Pos=mean(Diff > 0)) %>%
+                dplyr::mutate(Model=Names[Models==model])) %>%
+    dplyr::select(Model,everything())
+}
+Summ_Res

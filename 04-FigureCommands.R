@@ -1,8 +1,8 @@
 ## 04-FigureCommands.R
 ## Functions to generate figures from results
 
-require(tidyverse)
-require(RColorBrewer)
+library(tidyverse)
+library(RColorBrewer)
 Interv_start <- 2023
 
 ## DID Analysis Plots:
