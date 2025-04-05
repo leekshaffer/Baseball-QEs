@@ -9,7 +9,8 @@ Interv <- 2023:2024
 types <- c("2023","2024","2023_24") ## The core analysis year types
 full_types <- c(types, paste(types,"full",sep="_"),
                 "2023_inunit", "2022_intime",
-                "2023_low", "2023_high", "2023_restrict")
+                "2023_low", "2023_high", "2023_restrict",
+                "2023_PA325","2023_PA400")
 
 ## Required data sets:
 load(file="int/DID_data.Rda")
@@ -401,7 +402,11 @@ SCs_Results_2022_intime_2022 <- SCs_Results_2022_intime %>% dplyr::filter(Season
 SCs_Results_2022_intime_2023 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2023)
 SCs_Results_2023_24_2023 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2023)
 SCs_Results_2023_24_2024 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2024)
-Names <- c("2023_full","2024_full","2023","2023_24_2023","2023_24_2024","2024","2023_inunit","2022_intime_2022","2022_intime_2023","2023_low","2023_high","2023_restrict")
+Names <- c("2023_full", "2024_full", "2023", 
+           "2023_24_2023", "2023_24_2024", "2024",
+           "2023_inunit", "2022_intime_2022", "2022_intime_2023",
+           "2023_low", "2023_high", "2023_restrict",
+           "2023_PA325", "2023_PA400")
 Models <- paste("SCs","Results", Names,
                 sep="_")
 LM_Res <- NULL
@@ -411,6 +416,8 @@ for (outcome in Outcomes) {
   names(Row) <- Names
   LM_Res <- LM_Res %>% bind_rows(Row)
 }
+LM_Res <- LM_Res %>% dplyr::mutate(Outcome=Outcomes) %>%
+  dplyr::select(Outcome,everything())
 LM_Res
 
 Summ_Res <- NULL
@@ -426,3 +433,6 @@ for (model in Models) {
     dplyr::select(Model,everything())
 }
 Summ_Res
+
+save(list=c("LM_Res","Summ_Res"),
+     file="res/Summary_Tables.Rda")

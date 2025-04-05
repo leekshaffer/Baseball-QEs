@@ -5,25 +5,11 @@ library(tidyverse)
 library(tidysynth)
 
 Interv <- 2023
-
-## Create summary data set for players with which seasons they had >= 250PA (50 for 2020), 
-### and their Shift Categories: 
 load(file="int/Sav_data.Rda")
 S_cols_full <- paste0("S_",15:24)
-Players_seasons <- B.250 %>% group_by(Name,Player_ID,Name_Match,Name_Disp) %>%
-  dplyr::summarize(S_15=(2015 %in% Season),
-                   S_16=(2016 %in% Season),
-                   S_17=(2017 %in% Season),
-                   S_18=(2018 %in% Season),
-                   S_19=(2019 %in% Season),
-                   S_20=(2020 %in% Season),
-                   S_21=(2021 %in% Season),
-                   S_22=(2022 %in% Season),
-                   S_23=(2023 %in% Season),
-                   S_24=(2024 %in% Season)) %>%
-  ungroup()
-Players_seasons$Seasons_Dat <- apply(Players_seasons[,S_cols_full], 1, 
-                                     function(x) paste(S_cols_full[x], collapse="-"))
+
+## Create summary data set for players with which seasons they had >= 250PA (100 for 2020), 
+### and their Shift Categories: 
 
 Shift_2022_Names <- Sav.Shifts %>% 
   dplyr::filter(Season==2022) %>%
@@ -37,17 +23,54 @@ Shift_summ <- Sav.Shifts %>%
   ungroup() %>%
   left_join(Sav.Shifts %>% dplyr::filter(Season >= Interv) %>% 
               pivot_wider(id_cols=Name_Match, names_from=Season, 
-                          names_prefix="Shade_Perc_",values_from=PA_Shade_Percent),
+                          names_prefix="Shade_Perc_",
+                          values_from=PA_Shade_Percent),
             by="Name_Match")
-  
 
-Create_Pool <- function(Cuts, Cut_Var, S_cols_all) {
+PS_dat <- function(PA_cut=NULL) {
+  if (is.null(PA_cut)) {
+    Players_seasons <- B.250 %>% group_by(Name,Player_ID,Name_Match,Name_Disp) %>%
+      dplyr::summarize(S_15=(2015 %in% Season),
+                       S_16=(2016 %in% Season),
+                       S_17=(2017 %in% Season),
+                       S_18=(2018 %in% Season),
+                       S_19=(2019 %in% Season),
+                       S_20=(2020 %in% Season),
+                       S_21=(2021 %in% Season),
+                       S_22=(2022 %in% Season),
+                       S_23=(2023 %in% Season),
+                       S_24=(2024 %in% Season)) %>%
+      ungroup()
+  } else {
+    Players_seasons <- B.250 %>% 
+      dplyr::filter(PA >= PA_cut) %>% 
+      group_by(Name,Player_ID,Name_Match,Name_Disp) %>%
+      dplyr::summarize(S_15=(2015 %in% Season),
+                       S_16=(2016 %in% Season),
+                       S_17=(2017 %in% Season),
+                       S_18=(2018 %in% Season),
+                       S_19=(2019 %in% Season),
+                       S_20=(2020 %in% Season),
+                       S_21=(2021 %in% Season),
+                       S_22=(2022 %in% Season),
+                       S_23=(2023 %in% Season),
+                       S_24=(2024 %in% Season)) %>%
+      ungroup()
+  }
+  
+  Players_seasons$Seasons_Dat <- apply(Players_seasons[,S_cols_full], 1, 
+                                       function(x) paste(S_cols_full[x], 
+                                                         collapse="-"))
+  return(Players_seasons)
+}
+
+Create_Pool <- function(PS, Cuts, Cut_Var, S_cols_all) {
   Shift_summ_cat <- Shift_summ %>%
     dplyr::mutate(Shift_Cat=if_else(get(Cut_Var) <= Cuts[1], "Low",
                                     if_else(get(Cut_Var) >= Cuts[2], 
                                             "High", "Medium")))
   
-  Players_seasons %>% 
+  PS %>% 
     dplyr::filter(grepl(paste("S_",S_cols_all, sep="", collapse=".*"), Seasons_Dat)) %>%
     left_join(Shift_summ_cat, by="Name_Match")
 }

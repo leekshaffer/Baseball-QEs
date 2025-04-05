@@ -13,13 +13,20 @@ BStats <- tibble(stat=c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS"
 BStats$Use <- BStats$stat %in%  c("wOBA","OBP","OPS")
 Stat_Use <- BStats %>% dplyr::filter(Use) %>% pull(stat)
 
+## PA-threshold data sets
+PS_250 <- PS_dat()
+PS_325 <- PS_dat(PA_cut=325)
+PS_400 <- PS_dat(PA_cut=400)
+
 ## Primary Analysis
-Player_pool_2023_full <- Create_Pool(Cuts=c(15,15),
-                                Cut_Var="Shift_Perc_2022",
-                                S_cols_all=21:23)
-Player_pool_2023 <- Create_Pool(Cuts=c(15,75),
+Player_pool_2023_full <- Create_Pool(PS=PS_250,
+                                     Cuts=c(15,15),
                                      Cut_Var="Shift_Perc_2022",
                                      S_cols_all=21:23)
+Player_pool_2023 <- Create_Pool(PS=PS_250,
+                                Cuts=c(15,75),
+                                Cut_Var="Shift_Perc_2022",
+                                S_cols_all=21:23)
 SC_Res_23_full <- Run_SC(Player_pool_2023_full, 
                          21:23, 15:19, Res_Yrs=2023,
                          outname="SC-2023-full",
@@ -40,12 +47,14 @@ save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
      file=paste0("res/SC-2023-Complete.Rda"))
 
 ## Other intervention periods:
-Player_pool_2023_24_full <- Create_Pool(Cuts=c(15,15),
-                                     Cut_Var="Shift_Perc_2022",
-                                     S_cols_all=21:24)
-Player_pool_2023_24 <- Create_Pool(Cuts=c(15,75),
-                                Cut_Var="Shift_Perc_2022",
-                                S_cols_all=21:24)
+Player_pool_2023_24_full <- Create_Pool(PS=PS_250,
+                                        Cuts=c(15,15),
+                                        Cut_Var="Shift_Perc_2022",
+                                        S_cols_all=21:24)
+Player_pool_2023_24 <- Create_Pool(PS=PS_250,
+                                   Cuts=c(15,75),
+                                   Cut_Var="Shift_Perc_2022",
+                                   S_cols_all=21:24)
 SC_Res_23_24_full <- Run_SC(Player_pool_2023_24_full, 
                          21:24, 15:19, Res_Yrs=2023:2024,
                          outname="SC-2023-24-full",
@@ -65,12 +74,14 @@ save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
      file=paste0("res/SC-2023-24-Complete.Rda"))
 
 
-Player_pool_2024_full <- Create_Pool(Cuts=c(15,15),
+Player_pool_2024_full <- Create_Pool(PS=PS_250,
+                                     Cuts=c(15,15),
+                                     Cut_Var="Shift_Perc_2022",
+                                     S_cols_all=c(21,22,24))
+Player_pool_2024 <- Create_Pool(PS=PS_250,
+                                Cuts=c(15,75),
                                 Cut_Var="Shift_Perc_2022",
                                 S_cols_all=c(21,22,24))
-Player_pool_2024 <- Create_Pool(Cuts=c(15,75),
-                                   Cut_Var="Shift_Perc_2022",
-                                   S_cols_all=c(21,22,24))
 SC_Res_24_full <- Run_SC(Player_pool_2024_full, 
                          c(21,22,24), 15:19, Res_Yrs=2024,
                     outname="SC-2024-full",
@@ -113,31 +124,56 @@ SC_Res_22 <- Run_SC(Player_pool_2022_intime, 21:23, 15:19, Res_Yrs=2022,
                     Stats=Stat_Use)
 
 ### Change Donor Threshold Lower
-Player_pool_2023_low <- Create_Pool(Cuts=c(10,75),
-                                Cut_Var="Shift_Perc_2022",
-                                S_cols_all=21:23)
+Player_pool_2023_low <- Create_Pool(PS=PS_250,
+                                    Cuts=c(10,75),
+                                    Cut_Var="Shift_Perc_2022",
+                                    S_cols_all=21:23)
 SC_Res_23_low <- Run_SC(Player_pool_2023_low, 
                          21:23, 15:19, Res_Yrs=2023,
                          outname="SC-2023-low", Player_Weight_Plots=FALSE,
                         Stats=Stat_Use)
 
 ### Change Donor Threshold Higher
-Player_pool_2023_high <- Create_Pool(Cuts=c(25,75),
-                                    Cut_Var="Shift_Perc_2022",
-                                    S_cols_all=21:23)
+Player_pool_2023_high <- Create_Pool(PS=PS_250,
+                                     Cuts=c(25,75),
+                                     Cut_Var="Shift_Perc_2022",
+                                     S_cols_all=21:23)
 SC_Res_23_high <- Run_SC(Player_pool_2023_high, 
                         21:23, 15:19, Res_Yrs=2023,
                         outname="SC-2023-high", Player_Weight_Plots=FALSE,
                         Stats=Stat_Use)
 
 ### Restrict Seasons Used
-Player_pool_2023_restrict <- Create_Pool(Cuts=c(15,75),
-                                     Cut_Var="Shift_Perc_2022",
-                                     S_cols_all=21:23)
-SC_Res_23_restrict <- Run_SC(Player_pool_2023_restrict, 
-                         21:23, 18:19, Res_Yrs=2023,
-                         outname="SC-2023-restrict", Player_Weight_Plots=FALSE,
-                         Stats=Stat_Use)
+Player_pool_2023_restrict <- Create_Pool(PS=PS_250,
+                                         Cuts=c(15,75),
+                                         Cut_Var="Shift_Perc_2022",
+                                         S_cols_all=21:23)
+SC_Res_23_restrict <- Run_SC(Player_pool_2023_restrict,
+                             21:23, 18:19, Res_Yrs=2023,
+                             outname="SC-2023-restrict",
+                             Player_Weight_Plots=FALSE,
+                             Stats=Stat_Use)
+
+### Set higher PA thresholds
+Player_pool_2023_PA325 <- Create_Pool(PS=PS_325,
+                                      Cuts=c(15,75),
+                                      Cut_Var="Shift_Perc_2022",
+                                      S_cols_all=21:23)
+SC_Res_23_PA325 <- Run_SC(Player_pool_2023_PA325,
+                          21:23, 15:19, Res_Yrs=2023,
+                          outname="SC-2023-PA325",
+                          Player_Weight_Plots=FALSE,
+                          Stats=Stat_Use)
+
+Player_pool_2023_PA400 <- Create_Pool(PS=PS_400,
+                                      Cuts=c(15,75),
+                                      Cut_Var="Shift_Perc_2022",
+                                      S_cols_all=21:23)
+SC_Res_23_PA400 <- Run_SC(Player_pool_2023_PA400,
+                          21:23, 15:19, Res_Yrs=2023,
+                          outname="SC-2023-PA400",
+                          Player_Weight_Plots=FALSE,
+                          Stats=Stat_Use)
 
 
 ## Summaries for Plotting:
@@ -170,8 +206,11 @@ BStats <- BStats %>%
 
 ### Save internal data and parameters data:
 save(list=c(paste("Player","pool",
-                  c("2023","2024","2023_24","2023_full","2024_full","2023_24_full","2022_intime","2023_inunit",
-                    "2023_low","2023_high","2023_restrict","avg"),
+                  c("2023", "2024", "2023_24",
+                    "2023_full", "2024_full", "2023_24_full",
+                    "2022_intime", "2023_inunit",
+                    "2023_low", "2023_high", "2023_restrict",
+                    "2023_PA325", "2023_PA400", "avg"),
                   sep="_"),
             "B.250_pool", "BStats"),
      file="int/Player_pool_data.Rda")
