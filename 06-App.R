@@ -8,7 +8,7 @@ Interv <- 2023
 types <- c("2023","2024","2023_24") ## The analysis year types
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
-for (type in c(types,"2023_full")) {
+for (type in c(types, paste(types,"full",sep="_"))) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Complete.Rda"))
@@ -57,8 +57,8 @@ player_info <- function(display_name,targS) {
 ### Effect Estimates & P-Values Table:
 ests_tbl <- function(display_name,statval,targS) {
   if (display_name==All_token_SC) {
-    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",ifelse(targS=="2023","2023_full",targS))))
-    MSPEs_Res_int <- get(paste0("MSPEs_Results_",gsub("-","_",ifelse(targS=="2023","2023_full",targS))))
+    SCs_Res_int <- get(paste0("SCs_Results_", gsub("-","_",targS), "_full"))
+    MSPEs_Res_int <- get(paste0("MSPEs_Results_", gsub("-","_",targS), "_full"))
     Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & 
                                            Intervention & !(Placebo_Unit)) %>% 
       dplyr::select(Name_Disp,Shift_Perc_2022,Outcome,Season,Observed,Synthetic,Diff) %>%
@@ -118,7 +118,8 @@ DID_tbl <- function(statval) {
 }
 
 wts_tbl <- function(display_name,statval,targS) {
-  load(file=paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",display_name,".Rda"))
+  load(file=paste0("res/Players-SC-", targS, "-full",
+                   "/Player-SC-", display_name, ".Rda"))
   Tbl <- Weights_Unit %>% dplyr::rename(`Control Player`=unit,
                                         `wOBA Weight`=wOBA_weight,
                                         `OBP Weight`=OBP_weight,
@@ -326,7 +327,7 @@ server <- function(input, output) {
   
   output$tbl1 <- DT::renderDataTable({
     validate(
-      need(file.exists(paste0("res/Players-SC-",ifelse(input$TargetSeason=="2023","2023-full",input$TargetSeason),
+      need(file.exists(paste0("res/Players-SC-", input$TargetSeason, "-full",
                               "/Player-SC-",input$InName,".Rda")),
            message="This target season selection is not available for this player.")
     )
@@ -347,7 +348,7 @@ server <- function(input, output) {
   
   output$tbl2 <- DT::renderDataTable({
     validate(
-      need(file.exists(paste0("res/Players-SC-",ifelse(input$TargetSeason=="2023","2023-full",input$TargetSeason),
+      need(file.exists(paste0("res/Players-SC-", input$TargetSeason, "-full",
                               "/Player-SC-",input$InName,".Rda")),
            message="This target season selection is not available for this player.")
     )
@@ -360,10 +361,12 @@ server <- function(input, output) {
     Target <- input$InName
     targS <- input$TargetSeason
     validate(
-      need(file.exists(paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",Target,".Rda")),
+      need(file.exists(paste0("res/Players-SC-", targS, "-full", 
+                              "/Player-SC-", Target, ".Rda")),
            message="This target season selection is not available for this player.")
     )
-    load(file=paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",Target,".Rda"))
+    load(file=paste0("res/Players-SC-", targS, "-full", 
+                     "/Player-SC-",Target,".Rda"))
     if (input$InStat==All_token_SC) {
         SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>% 
           dplyr::filter(Outcome==BStats_Use$stat[1] & 
@@ -450,10 +453,12 @@ server <- function(input, output) {
     Target <- input$InName
     targS <- input$TargetSeason
     validate(
-      need(file.exists(paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",Target,".Rda")),
+      need(file.exists(paste0("res/Players-SC-", targS, "-full",
+                              "/Player-SC-",Target,".Rda")),
            message="This target season selection is not available for this player.")
     )
-    load(file=paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",Target,".Rda"))
+    load(file=paste0("res/Players-SC-", targS, "-full",
+                     "/Player-SC-",Target,".Rda"))
     if (input$InStat==All_token_SC) {
         SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==BStats_Use$stat[2] & 
@@ -511,15 +516,13 @@ server <- function(input, output) {
   
   output$Allplot3 <- renderPlot({
     validate(
-      need(file.exists(paste0("res/SC-",
-                              ifelse(input$AllTargetSeason=="2023","2023-full",input$AllTargetSeason),
-                              "-Complete.Rda")),
+      need(file.exists(paste0("res/SC-", input$AllTargetSeason, 
+                              "-full-Complete.Rda")),
            message="This target season selection is not available.")
     )
     SCs_Res_int <- get(paste0("SCs_Results_",
-                              gsub("-","_",
-                                   ifelse(input$AllTargetSeason=="2023",
-                                          "2023-full",input$AllTargetSeason))))
+                              gsub("-", "_", input$AllTargetSeason),
+                              "_full"))
     if (input$AllTargetSeason=="2023") {
       plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
                   LW=1, Placebo_Inc=TRUE, tagval=NULL)
@@ -533,10 +536,12 @@ server <- function(input, output) {
     Target <- input$InName
     targS <- input$TargetSeason
     validate(
-      need(file.exists(paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",Target,".Rda")),
+      need(file.exists(paste0("res/Players-SC-", targS, "-full", 
+                              "/Player-SC-", Target, ".Rda")),
            message="This target season selection is not available for this player.")
     )
-    load(file=paste0("res/Players-SC-",ifelse(targS=="2023","2023-full",targS),"/Player-SC-",Target,".Rda"))
+    load(file=paste0("res/Players-SC-", targS, "-full", 
+                     "/Player-SC-", Target, ".Rda"))
     if (input$InStat==All_token_SC) {
         SC_data <- get(paste0("SCs_Results_",gsub("-","_",targS))) %>%
           dplyr::filter(Outcome==BStats_Use$stat[3] & 

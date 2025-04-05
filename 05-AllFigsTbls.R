@@ -7,13 +7,15 @@ library(patchwork)
 MSoutdir <- "figs/Manuscript/"
 Interv <- 2023:2024
 types <- c("2023","2024","2023_24") ## The core analysis year types
+full_types <- c(types, paste(types,"full",sep="_"),
+                "2023_inunit", "2022_intime",
+                "2023_low", "2023_high", "2023_restrict")
 
 ## Required data sets:
 load(file="int/DID_data.Rda")
 load(file="int/Player_pool_data.Rda")
 
-for (type in c(types,"2023_inunit","2022_intime","2023_full",
-               "2023_low","2023_high","2023_restrict")) {
+for (type in full_types) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Complete.Rda"))
@@ -81,7 +83,9 @@ Target <- "Corey Seager"
 
 for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) {
   print(paste0("Player-specific SCM for: ",Target," in ",gsub("_","-",type)))
-  load(file=paste0("res/Players-SC-",gsub("_","-",ifelse(type=="2023","2023-full",type)),"/Player-SC-",Target,".Rda"))
+  load(file=paste0("res/Players-SC-",
+                   gsub("_","-",ifelse(type %in% types, paste(type,"full",sep="_"), type)),
+                   "/Player-SC-",Target,".Rda"))
   Weights_Unit %>% dplyr::arrange(desc(OPS_weight))
   Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
   Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
@@ -114,7 +118,7 @@ for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) 
 }
 
 ### Manuscript Table 3:
-for (type in c(types,"2023_inunit","2022_intime")) {
+for (type in full_types) {
   assign(x=paste0("Tbl3_",type),
          value = get(x=paste0("MSPEs_Results_",type)) %>%
     dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
@@ -283,8 +287,7 @@ for (outval in BStats$stat) {
 }
 
 ### Full Set of all-player SCM estimate plots:
-for (type in c(types,"2022_intime","2023_inunit","2023_full",
-               "2023_low","2023_high","2023_restrict")) {
+for (type in types_full) {
   for (outval in BStats %>% dplyr::filter(Use) %>% dplyr::pull(stat)) {
     ggsave(filename=paste0("All-Player-SC/",gsub("_","-",type),"-",outval,".png"),
            plot=plot_SC_ests_all(outval, get(x=paste0("SCs_Results_",type))) + 
@@ -381,7 +384,7 @@ for (type in c(types,"2023_low","2023_high","2023_restrict")) {
            plot_layout(nrow=2, ncol=2, byrow=TRUE),
          dpi=600, width=12, height=8.1, units="in")
 }
-for (type in c("2023_full")) {
+for (type in paste(types,"full",sep="_")) {
   ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
          plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
                             LW=0.8, Placebo_Inc=TRUE, tagval="A. ") + 
@@ -398,7 +401,7 @@ SCs_Results_2022_intime_2022 <- SCs_Results_2022_intime %>% dplyr::filter(Season
 SCs_Results_2022_intime_2023 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2023)
 SCs_Results_2023_24_2023 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2023)
 SCs_Results_2023_24_2024 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2024)
-Names <- c("2023_full","2023","2023_24_2023","2023_24_2024","2024","2023_inunit","2022_intime_2022","2022_intime_2023","2023_low","2023_high","2023_restrict")
+Names <- c("2023_full","2024_full","2023","2023_24_2023","2023_24_2024","2024","2023_inunit","2022_intime_2022","2022_intime_2023","2023_low","2023_high","2023_restrict")
 Models <- paste("SCs","Results", Names,
                 sep="_")
 LM_Res <- NULL
