@@ -8,7 +8,7 @@ Interv <- 2023
 types <- c("2023","2024","2023_24") ## The analysis year types
 load(file="int/Player_pool_data.Rda")
 load(file="int/DID_data.Rda")
-for (type in types) {
+for (type in c(types,"2023_full")) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
   load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
@@ -56,30 +56,39 @@ player_info <- function(display_name,targS) {
 
 ### Effect Estimates & P-Values Table:
 ests_tbl <- function(display_name,statval,targS) {
-  SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",targS)))
-  MSPEs_Res_int <- get(paste0("MSPEs_Results_",gsub("-","_",targS)))
   if (display_name==All_token_SC) {
+    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",ifelse(targS=="2023","2023_full",targS))))
+    MSPEs_Res_int <- get(paste0("MSPEs_Results_",gsub("-","_",ifelse(targS=="2023","2023_full",targS))))
     Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & 
                                            Intervention & !(Placebo_Unit)) %>% 
-      dplyr::select(Name_Disp,Outcome,Season,Observed,Synthetic,Diff) %>%
+      dplyr::select(Name_Disp,Shift_Perc_2022,Outcome,Season,Observed,Synthetic,Diff) %>%
       left_join(MSPEs_Res_int %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
-      dplyr::rename(Player=Name_Disp, `Observed Value`=Observed, `Synthetic Control Value`=Synthetic,
+      dplyr::rename(Player=Name_Disp, `2022 Shifts (%)`=Shift_Perc_2022, `Observed Value`=Observed, 
+                    `Synthetic Control Value`=Synthetic,
                     `Effect Estimate`=Diff, `Placebo P-Value`=PVal) %>%
       dplyr::mutate(across(.cols=-c("Player","Outcome","Season"),
                            .fns=~format(round(.x, digits=3), digits=3, nsmall=3)))
+    if (statval==All_token_SC) {
+      Tbl %>% dplyr::arrange(desc(`2022 Shifts (%)`),Player,Season,Outcome)
+    } else {
+      Tbl %>% dplyr::filter(Outcome==statval) %>% dplyr::arrange(desc(`2022 Shifts (%)`),Player,Season)
+    }
   } else {
+    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",targS)))
+    MSPEs_Res_int <- get(paste0("MSPEs_Results_",gsub("-","_",targS)))
     Tbl <- SCs_Res_int %>% dplyr::filter(Outcome %in% BStats_Use$stat & Name_Disp==display_name & Intervention) %>% 
       dplyr::select(Name_Disp,Outcome,Season,Observed,Synthetic,Diff) %>%
       left_join(MSPEs_Res_int %>% dplyr::select(Name_Disp,Outcome,PVal), by=c("Name_Disp","Outcome")) %>%
-      dplyr::rename(Player=Name_Disp, `Observed Value`=Observed, `Synthetic Control Value`=Synthetic,
+      dplyr::rename(Player=Name_Disp,
+                    `Observed Value`=Observed, `Synthetic Control Value`=Synthetic,
                     `Effect Estimate`=Diff, `Placebo P-Value`=PVal) %>%
       dplyr::mutate(across(.cols=-c("Player","Outcome","Season"),
                            .fns=~format(round(.x, digits=3), digits=3, nsmall=3)))
-  }
-  if (statval==All_token_SC) {
-    Tbl %>% dplyr::arrange(Player,Season,Outcome)
-  } else {
-    Tbl %>% dplyr::filter(Outcome==statval) %>% dplyr::arrange(Player,Season)
+    if (statval==All_token_SC) {
+      Tbl %>% dplyr::arrange(Player,Season,Outcome)
+    } else {
+      Tbl %>% dplyr::filter(Outcome==statval) %>% dplyr::arrange(Player,Season)
+    }
   }
 }
 
@@ -129,7 +138,7 @@ ui <- fluidPage(
     id = "tabset",
     tabPanel("Analysis 1 (DID)", 
              page_sidebar(
-               title = "Effect of the Shift Ban on Left-Handed MLB Batters, 2023",
+               title = "Effect of the Shift Ban on Left-Handed MLB Batters",
                sidebar=sidebar(
                  selectInput("DIDInStat", label = h4("Choose Outcome"),
                              choices = as.list(c(All_token_DID,BStats$stat)),
@@ -152,7 +161,7 @@ ui <- fluidPage(
     
     tabPanel("Analysis 2 (SCM): All Players",
              page_sidebar(
-               title = "Effect of the Shift Ban on High-Shift MLB Players, 2023",
+               title = "Effect of the Shift Ban on Shifted MLB Players",
                sidebar=sidebar(
                  selectInput("SCAllInStat", label = h4("Choose Outcome"),
                              choices = as.list(c(BStats_Use$stat)),
@@ -194,7 +203,7 @@ ui <- fluidPage(
     
     tabPanel("Analysis 2 (SCM): By Player",
              page_sidebar(
-               title = "Effect of the Shift Ban on High-Shift MLB Players, 2023",
+               title = "Effect of the Shift Ban on High-Shift MLB Players",
                sidebar=sidebar(
                  selectInput("InName", label = h4("Choose Player"),
                              choices = as.list(c(Player_Choices)),
@@ -502,12 +511,22 @@ server <- function(input, output) {
   
   output$Allplot3 <- renderPlot({
     validate(
-      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",
+                              ifelse(input$AllTargetSeason=="2023","2023-full",input$AllTargetSeason),
+                              "-Results-Complete.Rda")),
            message="This target season selection is not available.")
     )
-    SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
-    plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
-                  LW=1, tagval=NULL)
+    SCs_Res_int <- get(paste0("SCs_Results_",
+                              gsub("-","_",
+                                   ifelse(input$AllTargetSeason=="2023",
+                                          "2023-full",input$AllTargetSeason))))
+    if (input$AllTargetSeason=="2023") {
+      plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
+                  LW=1, Placebo_Inc=TRUE, tagval=NULL)
+    } else {
+      plot_SC_Shift(input$SCAllInStat, SCs_Res_int,
+                    LW=1, Placebo_Inc=FALSE, tagval=NULL)
+    }
   })
   
   output$plot3 <- renderPlot({
