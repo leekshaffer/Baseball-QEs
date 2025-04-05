@@ -13,7 +13,7 @@ BStats <- tibble(stat=c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS"
 BStats$Use <- BStats$stat %in%  c("wOBA","OBP","OPS")
 Stat_Use <- BStats %>% dplyr::filter(Use) %>% pull(stat)
 
-## Primary Analyses
+## Primary Analysis
 Player_pool_2023_full <- Create_Pool(Cuts=c(15,15),
                                 Cut_Var="Shift_Perc_2022",
                                 S_cols_all=21:23)
@@ -31,30 +31,64 @@ Keep_Names <- Player_pool_2023 %>%
   dplyr::filter(Shift_Cat != "Medium") %>%
   dplyr::select(Player_ID) %>%
   distinct() %>% pull(Player_ID)
-load("res/SC-2023-full-Results-Complete.Rda")
+load("res/SC-2023-full-Complete.Rda")
 SCs_Results <- SCs_Results %>% 
   dplyr::filter(Player_ID %in% Keep_Names)
 MSPEs_Results <- MSPEs_Results %>%
   dplyr::filter(Player_ID %in% Keep_Names)
 save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
-     file=paste0("res/SC-2023-Results-Complete.Rda"))
+     file=paste0("res/SC-2023-Complete.Rda"))
 
 ## Other intervention periods:
+Player_pool_2023_24_full <- Create_Pool(Cuts=c(15,15),
+                                     Cut_Var="Shift_Perc_2022",
+                                     S_cols_all=21:24)
 Player_pool_2023_24 <- Create_Pool(Cuts=c(15,75),
-                                   Cut_Var="Shift_Perc_2022",
-                                   S_cols_all=21:24)
-SC_Res_23_24 <- Run_SC(Player_pool_2023_24, 21:24, 15:19, Res_Yrs=2023:2024,
-                       outname="SC-2023-24",
-                       Player_Weight_Plots=FALSE,
-                       Stats=Stat_Use)
+                                Cut_Var="Shift_Perc_2022",
+                                S_cols_all=21:24)
+SC_Res_23_24_full <- Run_SC(Player_pool_2023_24_full, 
+                         21:24, 15:19, Res_Yrs=2023:2024,
+                         outname="SC-2023-24-full",
+                         Player_Weight_Plots=FALSE,
+                         Stats=Stat_Use)
 
+Keep_Names <- Player_pool_2023_24 %>%
+  dplyr::filter(Shift_Cat != "Medium") %>%
+  dplyr::select(Player_ID) %>%
+  distinct() %>% pull(Player_ID)
+load("res/SC-2023-24-full-Complete.Rda")
+SCs_Results <- SCs_Results %>% 
+  dplyr::filter(Player_ID %in% Keep_Names)
+MSPEs_Results <- MSPEs_Results %>%
+  dplyr::filter(Player_ID %in% Keep_Names)
+save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
+     file=paste0("res/SC-2023-24-Complete.Rda"))
+
+
+Player_pool_2024_full <- Create_Pool(Cuts=c(15,15),
+                                Cut_Var="Shift_Perc_2022",
+                                S_cols_all=c(21,22,24))
 Player_pool_2024 <- Create_Pool(Cuts=c(15,75),
                                    Cut_Var="Shift_Perc_2022",
                                    S_cols_all=c(21,22,24))
-SC_Res_24 <- Run_SC(Player_pool_2024, c(21,22,24), 15:19, Res_Yrs=2024,
-                    outname="SC-2024",
+SC_Res_24_full <- Run_SC(Player_pool_2024_full, 
+                         c(21,22,24), 15:19, Res_Yrs=2024,
+                    outname="SC-2024-full",
                     Player_Weight_Plots=FALSE,
                     Stats=Stat_Use)
+
+Keep_Names <- Player_pool_2024 %>%
+  dplyr::filter(Shift_Cat != "Medium") %>%
+  dplyr::select(Player_ID) %>%
+  distinct() %>% pull(Player_ID)
+load("res/SC-2024-full-Complete.Rda")
+SCs_Results <- SCs_Results %>% 
+  dplyr::filter(Player_ID %in% Keep_Names)
+MSPEs_Results <- MSPEs_Results %>%
+  dplyr::filter(Player_ID %in% Keep_Names)
+save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
+     file=paste0("res/SC-2024-Complete.Rda"))
+
 
 ## Robustness Checks
 ### In-Unit: for Shift Rate between 15 and 30%
@@ -63,13 +97,13 @@ Player_pool_2023_inunit <- Player_pool_2023_full %>%
 Keep_Names <- Player_pool_2023_inunit %>%
   dplyr::select(Player_ID) %>%
   distinct() %>% pull(Player_ID)
-load("res/SC-2023-full-Results-Complete.Rda")
+load("res/SC-2023-full-Complete.Rda")
 SCs_Results <- SCs_Results %>% 
   dplyr::filter(Player_ID %in% Keep_Names)
 MSPEs_Results <- MSPEs_Results %>%
   dplyr::filter(Player_ID %in% Keep_Names)
 save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
-     file=paste0("res/SC-2023-inunit-Results-Complete.Rda"))
+     file=paste0("res/SC-2023-inunit-Complete.Rda"))
 
 ### In-Time: for 2022
 Player_pool_2022_intime <- Player_pool_2023
@@ -131,7 +165,7 @@ BStats <- BStats %>%
               dplyr::summarize(min=min(value, na.rm=TRUE), 
                                max=max(value, na.rm=TRUE)) %>% 
               ungroup()) %>%
-  left_join(bind_rows(SC_Res_23_full,SC_Res_23_24,SC_Res_24) %>% group_by(Outcome) %>% 
+  left_join(bind_rows(SC_Res_23_full,SC_Res_23_24_full,SC_Res_24_full) %>% group_by(Outcome) %>% 
               dplyr::summarize(diff_min=min(Diff, na.rm=TRUE),
                                diff_max=max(Diff, na.rm=TRUE)) %>%
               ungroup(),
@@ -140,7 +174,7 @@ BStats <- BStats %>%
 
 ### Save internal data and parameters data:
 save(list=c(paste("Player","pool",
-                  c("2023","2024","2023_24","2023_full","2022_intime","2023_inunit",
+                  c("2023","2024","2023_24","2023_full","2024_full","2023_24_full","2022_intime","2023_inunit",
                     "2023_low","2023_high","2023_restrict","avg"),
                   sep="_"),
             "B.250_pool", "BStats"),

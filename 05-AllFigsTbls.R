@@ -16,7 +16,7 @@ for (type in c(types,"2023_inunit","2022_intime","2023_full",
                "2023_low","2023_high","2023_restrict")) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
-  load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
+  load(file=paste0("res/SC-",gsub("_","-",type),"-Complete.Rda"))
   assign(x=paste0("MSPEs_PRes_",type),
          value=MSPEs_PRes %>% left_join(Shifts, by=join_by(Placebo_ID==Player_ID)))
   assign(x=paste0("MSPEs_Results_",type),
@@ -285,9 +285,8 @@ for (outval in BStats$stat) {
 ### Full Set of all-player SCM estimate plots:
 for (type in c(types,"2022_intime","2023_inunit","2023_full",
                "2023_low","2023_high","2023_restrict")) {
-  SCMoutdir <- paste0("figs/SC-",gsub("_","-",type)," Estimates/")
   for (outval in BStats %>% dplyr::filter(Use) %>% dplyr::pull(stat)) {
-    ggsave(filename=paste0(SCMoutdir,"SCM-plot-",outval,".png"),
+    ggsave(filename=paste0("All-Player-SC/",gsub("_","-",type),"-",outval,".png"),
            plot=plot_SC_ests_all(outval, get(x=paste0("SCs_Results_",type))) + 
              theme(legend.position="bottom",
                    legend.background=element_rect(fill="white", color="grey50"),

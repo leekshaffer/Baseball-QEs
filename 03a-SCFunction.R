@@ -386,7 +386,7 @@ Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19,
   
   ### Save results data:
   save(list=c("MSPEs_PRes", "SCs_Results","MSPEs_Results"),
-       file=paste0("res/",outname,"-Results-Complete.Rda"))
+       file=paste0("res/",outname,"-Complete.Rda"))
   
   return(SCs_Results)
 }

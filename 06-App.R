@@ -11,7 +11,7 @@ load(file="int/DID_data.Rda")
 for (type in c(types,"2023_full")) {
   Shifts <- get(paste0("Player_pool_",type)) %>% dplyr::select(Player_ID, Shift_Perc_2022, Shift_Cat, 
                                                                Shift_Perc_Max)
-  load(file=paste0("res/SC-",gsub("_","-",type),"-Results-Complete.Rda"))
+  load(file=paste0("res/SC-",gsub("_","-",type),"-Complete.Rda"))
   assign(x=paste0("MSPEs_PRes_",type),
          value=MSPEs_PRes %>% left_join(Shifts, by=join_by(Placebo_ID==Player_ID)))
   assign(x=paste0("MSPEs_Results_",type),
@@ -337,7 +337,7 @@ server <- function(input, output) {
   
   output$Alltbl1 <- DT::renderDataTable({
     validate(
-      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Complete.Rda")),
            message="This target season selection is not available.")
     )
     DT::datatable(ests_tbl(All_token_SC, input$SCAllInStat, input$AllTargetSeason), 
@@ -414,7 +414,7 @@ server <- function(input, output) {
   
   output$Allplot1 <- renderPlot({
     validate(
-      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Complete.Rda")),
            message="This target season selection is not available.")
     )
     # if (input$SCAllInStat==All_token_SC) {
@@ -492,7 +492,7 @@ server <- function(input, output) {
   
   output$Allplot2 <- renderPlot({
     validate(
-      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Results-Complete.Rda")),
+      need(file.exists(paste0("res/SC-",input$AllTargetSeason,"-Complete.Rda")),
            message="This target season selection is not available.")
     )
     SCs_Res_int <- get(paste0("SCs_Results_",gsub("-","_",input$AllTargetSeason)))
@@ -513,7 +513,7 @@ server <- function(input, output) {
     validate(
       need(file.exists(paste0("res/SC-",
                               ifelse(input$AllTargetSeason=="2023","2023-full",input$AllTargetSeason),
-                              "-Results-Complete.Rda")),
+                              "-Complete.Rda")),
            message="This target season selection is not available.")
     )
     SCs_Res_int <- get(paste0("SCs_Results_",

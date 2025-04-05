@@ -214,6 +214,8 @@ plot_SC_ests_all <- function(statval, SC.dat, LW=1, tagval=NULL) {
                tagval)
 }
 
+yr_cols <- c("#2c7bb6","#fdae61")
+yrs <- c(2023,2024)
 ## SCM estimates by Shift Rate plots:
 plot_SC_Shift <- function(statval, SC.dat,
                          LW=1,
@@ -225,9 +227,17 @@ plot_SC_Shift <- function(statval, SC.dat,
     dat_use <- dat_use %>% dplyr::filter(!Placebo_Unit)
   }
   plot <- ggplot(data=dat_use,
-         mapping=aes(x=Shift_Perc_2022, y=Diff)) +
-    geom_point() + geom_smooth(method="loess", se=TRUE,
-                               linewidth=LW, color="blue", linetype="dashed") +
+         mapping=aes(x=Shift_Perc_2022, y=Diff, 
+                     group=factor(Season), color=factor(Season)))
+  if (length(unique(dat_use$Season))==1) {
+    plot <- plot + geom_smooth(method="loess", se=TRUE,
+                               linewidth=LW, linetype="dashed")
+  } else {
+    plot <- plot + geom_smooth(method="loess", se=FALSE,
+                               linewidth=LW, linetype="dashed")
+  }
+  plot <- plot +
+    geom_point() + 
     scale_x_continuous(name="Shift Rate (2022)",
                        breaks=seq(0,90,by=15),
                        labels=c("0%","15%","30%","45%","60%","75%","90%"),
@@ -236,8 +246,12 @@ plot_SC_Shift <- function(statval, SC.dat,
     scale_y_continuous(name="Difference, Synthetic \U2013 Observed",
                        limits=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")]),
                        labels = scales::label_number(accuracy = 0.001)) +
+    scale_color_manual(values=yr_cols[yrs %in% unique(dat_use$Season)],
+                       limits=(as.character(yrs))[yrs %in% unique(dat_use$Season)],
+                       name="Season Estimated") +
     coord_cartesian(ylim=unlist(BStats[BStats$stat==statval,c("diff_min","diff_max")])) +
     theme_bw() +
+    theme(legend.position="bottom") +
     labs(title=paste0(tagval,"SCM estimates for ",statval," by 2022 Shift Rate"))
   if (Placebo_Inc) {
     plot + geom_vline(xintercept=15, linewidth=LW, linetype="dotted", color="gray50")
