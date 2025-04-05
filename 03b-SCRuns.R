@@ -140,11 +140,7 @@ SC_Res_23_restrict <- Run_SC(Player_pool_2023_restrict,
                          Stats=Stat_Use)
 
 
-
-
-
-
-## Stuff for Graphs:
+## Summaries for Plotting:
 ## League-wide averages by categories (across players w/ >= 250PA):
 B.250_pool <- B.250 %>%
   left_join(bind_rows(Player_pool_2023,Player_pool_2024) %>% distinct() %>% 
