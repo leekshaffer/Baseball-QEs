@@ -9,6 +9,38 @@ Interv <- 2023:2024
 ## Hitting stats to consider:
 BStats <- c("AVG","BABIP","BB percent","K percent","OBP","SLG","OPS","wOBA")
 
+FG.dat.ses <- FG.dat.empty %>%
+  dplyr::mutate(HIP=H-HR,
+                BIP=AB-HR-SO,
+                OB=H+BB+IBB+HBP,
+                OBdenom=AB+BB+IBB+HBP+SF,
+                BABIP_est=HIP/BIP,
+                OBP_est=OB/OBdenom,
+                BABIP_var=BABIP_est*(1-BABIP_est)/BIP,
+                OBP_var=OBP_est*(1-OBP_est)/OBdenom,
+                BABIP_se=sqrt(BABIP_var),
+                OBP_se=sqrt(OBP_var))
+
+FG.tab.1.inputs <- FG.dat.ses %>% filter(Season %in% c(2022,2023)) %>% 
+  dplyr::select(Batter,Season,BABIP,BABIP_est,BABIP_var,BABIP_se,
+                OBP,OBP_est,OBP_var,OBP_se)
+
+FG.tab.1.byHB <- FG.tab.1.inputs %>% group_by(Batter) %>%
+  dplyr::summarize(Diff_BABIP=BABIP[Season==2023]-BABIP[Season==2022],
+                   Diff_OBP=OBP[Season==2023]-OBP[Season==2022],
+                   SE_BABIP=sqrt(sum(BABIP_var)),
+                   SE_OBP=sqrt(sum(OBP_var)))
+FG.tab.1.byYr <- FG.tab.1.inputs %>% group_by(Season) %>%
+  dplyr::summarize(Diff_BABIP=BABIP[Batter=="LHB"]-BABIP[Batter=="RHB"],
+                   Diff_OBP=OBP[Batter=="LHB"]-OBP[Batter=="RHB"],
+                   SE_BABIP=sqrt(sum(BABIP_var)),
+                   SE_OBP=sqrt(sum(OBP_var)))
+FG.tab.1.DID <- FG.tab.1.byYr %>%
+  dplyr::summarize(DID_BABIP=Diff_BABIP[Season==2023]-Diff_BABIP[Season==2022],
+                   DID_OBP=Diff_OBP[Season==2023]-Diff_OBP[Season==2022],
+                   SE_BABIP=sqrt(sum(SE_BABIP^2)),
+                   SE_OBP=sqrt(sum(SE_OBP^2)))
+
 FG.dat.withCF <- FG.dat.empty %>% dplyr::filter(Season != 2020 & Season <= max(Interv)) %>%
   dplyr::select(all_of(c("Season","Batter",BStats)))
 FG.dat.withCF <- FG.dat.withCF %>%
@@ -58,6 +90,6 @@ for (val in BStats) {
 }
 FullES %>% dplyr::select(Season,Type,ends_with("ES"))
 
-save(list=c("FG.dat.withCF","TwoByTwo","FullES"),
+save(list=c("FG.dat.withCF","TwoByTwo","FullES","FG.tab.1.inputs","FG.tab.1.byHB","FG.tab.1.byYr","FG.tab.1.DID"),
      file="int/DID_data.Rda")
 
