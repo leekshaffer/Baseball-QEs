@@ -208,12 +208,13 @@ Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19,
       }
       BalTbl[[statval]] <- synth_player %>% grab_balance_table()
       SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
-                                 dplyr::mutate(Outcome=statval, 
+                                 dplyr::mutate(Outcome=statval,
+                                               Donors=N_donor,
                                                Diff=real_y-synth_y,
                                                Intervention=time_unit >= min(Res_Yrs)) %>% 
                                  dplyr::rename(Season=time_unit, Observed=real_y,
                                                Synthetic=synth_y) %>%
-                                 dplyr::select(Outcome,Season,Intervention,
+                                 dplyr::select(Outcome,Donors,Season,Intervention,
                                                Observed,Synthetic,Diff))
     }
     MSPEs <- SCs %>% group_by(Outcome,Intervention) %>%
@@ -232,8 +233,8 @@ Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19,
   
   ### Get summary results across target players:
   SCs_Full <- SCs_Full %>% 
-    dplyr::select(Name,Player_ID,Outcome,Season,Intervention,Observed,Synthetic,Diff,Name_Disp)
-  MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Intervention) %>%
+    dplyr::select(Name,Player_ID,Outcome,Donors,Season,Intervention,Observed,Synthetic,Diff,Name_Disp)
+  MSPEs_Full <- SCs_Full %>% group_by(Name,Player_ID,Name_Disp,Outcome,Donors,Intervention) %>%
     dplyr::summarize(MSPE=mean(Diff^2)) %>%
     ungroup() %>%
     dplyr::mutate(Type=if_else(Intervention,"Post","Pre")) %>%
@@ -340,17 +341,19 @@ Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19,
       
       ## Pull results and save:
       SCs <- SCs %>% bind_rows(synth_player %>% grab_synthetic_control(placebo=FALSE) %>%
-                                 dplyr::mutate(Outcome=statval, 
+                                 dplyr::mutate(Outcome=statval,
+                                               Donors=N_donor,
                                                Diff=real_y-synth_y,
                                                Intervention=time_unit >= min(Res_Yrs)))
     }
     SCs <- SCs %>% dplyr::rename(Season=time_unit,
                                  Observed=real_y,
                                  Synthetic=synth_y) %>%
-      dplyr::select(Outcome,Season,Intervention,
+      dplyr::select(Outcome,Season,Donors,Intervention,
                     Observed,Synthetic,Diff)
     SCs_Plac <- SCs_Plac %>% 
-      bind_rows(SCs %>% mutate(Placebo_Name=Row$Name, Placebo_Disp=Disp_name, 
+      bind_rows(SCs %>% mutate(Placebo_Name=Row$Name, 
+                               Placebo_Disp=Disp_name, 
                                Placebo_ID=ID,
                                Placebo_Unit=TRUE))
   }
@@ -361,7 +364,7 @@ Run_SC <- function(Pool, S_cols_all, S_cols_check=15:19,
   
   
   ### Get summary results with placebo estimates:
-  MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Outcome,Intervention) %>%
+  MSPEs_Plac <- SCs_Plac %>% group_by(Placebo_Name,Placebo_ID,Placebo_Disp,Donors,Outcome,Intervention) %>%
     dplyr::summarize(MSPE=mean(Diff^2)) %>%
     ungroup() %>%
     dplyr::mutate(Type=if_else(Intervention,"Post","Pre")) %>%

@@ -123,7 +123,7 @@ for (type in full_types) {
   assign(x=paste0("Tbl3_",type),
          value = get(x=paste0("MSPEs_Results_",type)) %>%
     dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
-    dplyr::select(c("Name_Disp","Shift Rate (2022)","Outcome",starts_with("Diff"),"PVal")) %>%
+    dplyr::select(c("Name_Disp","Shift Rate (2022)","Donors","Outcome",starts_with("Diff"),"PVal")) %>%
     dplyr::rename(Player=Name_Disp, p=PVal) %>%
     dplyr::rename_with(.fn=~gsub("Diff","Est",.x),
                        .cols=starts_with("Diff")) %>%
