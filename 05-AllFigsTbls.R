@@ -411,8 +411,10 @@ Models <- paste("SCs","Results", Names,
                 sep="_")
 LM_Res <- NULL
 for (outcome in Outcomes) {
-  Row <- sapply(Models, FUN=function(x) coef(lm(Diff~Shift_Perc_2022,
-                                    data=get(x) %>% dplyr::filter(Intervention, Outcome==outcome)))["Shift_Perc_2022"]*10)
+  Row <- sapply(Models[Models != "SCs_Results_2023_inunit"], FUN=function(x) coef(lm(Diff~Shift_Perc_2022,
+                                    data=get(x) %>% dplyr::filter(Intervention, Outcome==outcome, `Shift_Perc_2022` >= 30)))["Shift_Perc_2022"]*10)
+  Row["SCs_Results_2023_inunit"] <- coef(lm(Diff~Shift_Perc_2022,
+                                            data=get("SCs_Results_2023_inunit") %>% dplyr::filter(Intervention, Outcome==outcome)))["Shift_Perc_2022"]*10
   names(Row) <- Names
   LM_Res <- LM_Res %>% bind_rows(Row)
 }
