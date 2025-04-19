@@ -31,11 +31,11 @@ for (type in full_types) {
 
 ## Analysis 1: League-Wide
 
-### Manuscript Figure 1
+### Manuscript Figure 2
 plot_BABIP <- plot_DIDs("BABIP", FG.dat.withCF, FullES, tagvals=c("A. ","C. "))
 plot_OBP <- plot_DIDs("OBP", FG.dat.withCF, FullES, tagvals=c("B. ","D. "))
 
-ggsave(filename=paste0(MSoutdir,"Figure1.png"),
+ggsave(filename=paste0(MSoutdir,"Figure2.png"),
        plot = plot_BABIP[["Trend"]] + theme(legend.position="inside",
                                             legend.position.inside=c(.201,.178),
                                             legend.background=element_rect(fill="white",
@@ -71,15 +71,15 @@ for (outval in BStats$stat) {
 }
 
 ### 2x2 tables for key outcomes:
-Tbl1 <- TwoByTwo %>% dplyr::select(c("Batter",starts_with("BABIP"),starts_with("OBP")))
-write.csv(x=Tbl1 %>%
+Tbl2 <- TwoByTwo %>% dplyr::select(c("Batter",starts_with("BABIP"),starts_with("OBP")))
+write.csv(x=Tbl2 %>%
             dplyr::mutate(across(.cols=-c("Batter"),
                                  .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-          file=paste0(MSoutdir,"Table1.csv"),
+          file=paste0(MSoutdir,"Table2.csv"),
           row.names=FALSE)
 
 ## Analysis 2: SCM
-### Manuscript Figure 2:
+### Manuscript Figure 3:
 Target <- "Corey Seager"
 
 for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) {
@@ -91,7 +91,7 @@ for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) 
   Weights_Unit %>% dplyr::arrange(desc(wOBA_weight))
   Weights_Unit %>% dplyr::arrange(desc(OBP_weight))
   
-  assign(x=paste0("Tbl2_",type),
+  assign(x=paste0("Tbl3_",type),
          value=Weights_Unit %>% 
            dplyr::filter(pmax(OBP_weight,OPS_weight,wOBA_weight) > 0.001) %>% 
            dplyr::mutate(across(.cols=contains("weight"), 
@@ -99,12 +99,12 @@ for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) 
            dplyr::arrange(desc(OBP_weight)))
   
   SCs %>% dplyr::filter(Intervention)
-  write.csv(x=get(paste0("Tbl2_",type)) %>%
+  write.csv(x=get(paste0("Tbl3_",type)) %>%
               dplyr::mutate(across(.cols=contains("weight"),
                                    .fns=~format(round(.x*100, digits=0), nsmall=0))),
-            file=paste0(MSoutdir,"Table2-",gsub("_","-",type),".csv"),
+            file=paste0(MSoutdir,"Table3-",gsub("_","-",type),".csv"),
             row.names=FALSE)
-  ggsave(filename=paste0(MSoutdir,"Figure2-",gsub("_","-",type),".png"),
+  ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
          plot=plot_Comp("OBP", get(x=paste0("SCs_Results_",type)), Target, "A. ") +
            plot_Comp("OPS", get(x=paste0("SCs_Results_",type)), Target, "B. ") +
            plot_Comp("wOBA", get(x=paste0("SCs_Results_",type)), Target, "C. ") +
@@ -118,9 +118,9 @@ for (type in c("2023_24","2024","2023","2023_low","2023_high","2023_restrict")) 
          dpi=600, width=12, height=8.1, units="in")
 }
 
-### Manuscript Table 3:
+### Manuscript Table 4:
 for (type in full_types) {
-  assign(x=paste0("Tbl3_",type),
+  assign(x=paste0("Tbl4_",type),
          value = get(x=paste0("MSPEs_Results_",type)) %>%
     dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(Shift_Perc_2022,1), digits=1, nsmall=1),"%")) %>%
     dplyr::select(c("Name_Disp","Shift Rate (2022)","Donors","Outcome",starts_with("Diff"),"PVal")) %>%
@@ -132,16 +132,16 @@ for (type in full_types) {
                 values_from=c(starts_with("Est"),"p"), names_vary="slowest") %>%
     dplyr::arrange(desc(`Shift Rate (2022)`)))
   
-  write.csv(x=get(paste0("Tbl3_",type)) %>%
+  write.csv(x=get(paste0("Tbl4_",type)) %>%
               dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
                                    .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
             file=paste0(MSoutdir,"Table3-",gsub("_","-",type),".csv"),
             row.names=FALSE)
 }
 
-### Manuscript Figure 3:
+### Manuscript Figure for Appx:
 for (type in c(types,"2023_low","2023_high","2023_restrict")) {
-  ggsave(filename=paste0(MSoutdir,"Figure3-",gsub("_","-",type),".png"),
+  ggsave(filename=paste0(MSoutdir,"FigureA-",gsub("_","-",type),".png"),
          plot=plot_SC_ests_all("OBP", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="A. ") + 
            plot_SC_ests_all("OPS", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="B. ") + 
            plot_SC_ests_all("wOBA", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="C. ") + 
@@ -154,7 +154,7 @@ for (type in c(types,"2023_low","2023_high","2023_restrict")) {
                  legend.direction="vertical"),
          dpi=600, width=12, height=8.1, units="in")
 }
-ggsave(filename=paste0(MSoutdir,"Figure3-2023-inunit.png"),
+ggsave(filename=paste0(MSoutdir,"FigureA-2023-inunit.png"),
        plot=(plot_SC_ests(statval="OBP", SC.dat=SCs_Results_2023_inunit,
                           LegName="Analysis Type",
                           LegVar="Placebo_Unit",
@@ -199,7 +199,7 @@ ggsave(filename=paste0(MSoutdir,"Figure3-2023-inunit.png"),
                legend.title=element_text(size=rel(1.2)),
                legend.direction="vertical"),
        dpi=600, width=12, height=8.1, units="in")
-ggsave(filename=paste0(MSoutdir,"Figure3-2022-intime.png"),
+ggsave(filename=paste0(MSoutdir,"FigureA-2022-intime.png"),
        plot=(plot_SC_ests_all(statval="OBP", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2022),
                           LW=0.8, tagval="A. ") + 
           geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
@@ -402,8 +402,13 @@ SCs_Results_2022_intime_2022 <- SCs_Results_2022_intime %>% dplyr::filter(Season
 SCs_Results_2022_intime_2023 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2023)
 SCs_Results_2023_24_2023 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2023)
 SCs_Results_2023_24_2024 <- SCs_Results_2023_24 %>% dplyr::filter(Season==2024)
+SCs_Results_2023_24_Avg <- SCs_Results_2023_24 %>% 
+  dplyr::filter(Season %in% c(2023,2024)) %>%
+  group_by(Name,Player_ID,Outcome,Donors,Intervention,Name_Disp,Placebo_Unit,Shift_Perc_2022,Shift_Cat,Shift_Perc_Max) %>%
+  dplyr::summarize(Diff=mean(Diff)) %>%
+  dplyr::mutate(Season=202324)
 Names <- c("2023_full", "2024_full", "2023", 
-           "2023_24_2023", "2023_24_2024", "2024",
+           "2023_24_2023", "2023_24_2024", "2023_24_Avg", "2024",
            "2023_inunit", "2022_intime_2022", "2022_intime_2023",
            "2023_low", "2023_high", "2023_restrict",
            "2023_PA325", "2023_PA400")
@@ -435,6 +440,60 @@ for (model in Models) {
     dplyr::select(Model,everything())
 }
 Summ_Res
+
+Means <- Summ_Res %>% 
+  pivot_wider(id_cols=c("Outcome","Placebo_Unit"),
+              names_from="Model",
+              values_from="Mean") %>%
+  dplyr::mutate(Category=factor(Placebo_Unit, levels=c(FALSE,TRUE),
+                                labels=c("High-Shift","Low-Shift"))) %>%
+  dplyr::select(c("Outcome","Category","2023","2024","2023_24_Avg",
+                  "2023_inunit","2022_intime_2022","2023_low","2023_high",
+                  "2023_restrict","2022_intime_2023",
+                  "2023_PA325","2023_PA400"))
+colnames(Means) <- c("Outcome","Category","2023","2024","2023-24 Average",
+                     "In-Unit","In-Time","10% Threshold","25% Threshold",
+                     "2018 Onward","Excluding 2022",
+                     "325+ PAs","400+ PAs")
+Medians <- Summ_Res %>% 
+  pivot_wider(id_cols=c("Outcome","Placebo_Unit"),
+              names_from="Model",
+              values_from="Median") %>%
+  dplyr::mutate(Category=factor(Placebo_Unit, levels=c(FALSE,TRUE),
+                                labels=c("High-Shift","Low-Shift"))) %>%
+  dplyr::select(c("Outcome","Category","2023","2024","2023_24_Avg",
+                  "2023_inunit","2022_intime_2022","2023_low","2023_high",
+                  "2023_restrict","2022_intime_2023",
+                  "2023_PA325","2023_PA400"))
+colnames(Medians) <- colnames(Means)
+PropPos <- Summ_Res %>% 
+  dplyr::mutate(`Prop.Pos`=100*`Prop.Pos`) %>%
+  pivot_wider(id_cols=c("Outcome","Placebo_Unit"),
+              names_from="Model",
+              values_from="Prop.Pos") %>%
+  dplyr::mutate(Category=factor(Placebo_Unit, levels=c(FALSE,TRUE),
+                                labels=c("High-Shift","Low-Shift"))) %>%
+  dplyr::select(c("Outcome","Category","2023","2024","2023_24_Avg",
+                  "2023_inunit","2022_intime_2022","2023_low","2023_high",
+                  "2023_restrict","2022_intime_2023",
+                  "2023_PA325","2023_PA400"))
+colnames(PropPos) <- colnames(Means)
+
+write.csv(x=Means %>%
+            dplyr::mutate(across(.cols=where(is.numeric),
+                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
+          file=paste0(MSoutdir,"TableA5-Means.csv"),
+          row.names=FALSE)
+write.csv(x=Medians %>%
+            dplyr::mutate(across(.cols=where(is.numeric),
+                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
+          file=paste0(MSoutdir,"TableA5-Medians.csv"),
+          row.names=FALSE)
+write.csv(x=PropPos %>%
+            dplyr::mutate(across(.cols=where(is.numeric),
+                                 .fns=~paste0(format(round(.x, digits=1), digits=1, nsmall=1),"%"))),
+          file=paste0(MSoutdir,"TableA5-PropPos.csv"),
+          row.names=FALSE)
 
 save(list=c("LM_Res","Summ_Res"),
      file="res/Summary_Tables.Rda")
