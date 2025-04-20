@@ -135,12 +135,62 @@ for (type in full_types) {
   write.csv(x=get(paste0("Tbl4_",type)) %>%
               dplyr::mutate(across(.cols=-c("Player","Shift Rate (2022)"),
                                    .fns=~format(round(.x, digits=3), digits=3, nsmall=3))),
-            file=paste0(MSoutdir,"Table3-",gsub("_","-",type),".csv"),
+            file=paste0(MSoutdir,"Table4-",gsub("_","-",type),".csv"),
             row.names=FALSE)
 }
 
+Tbl4_itprep <- MSPEs_Results_2022_intime %>% 
+  dplyr::select(c("Name_Disp","Shift_Perc_2022","Donors","Outcome","Diff_2022","Diff_2023"))
+Get_P <- function(row) {
+  val22 <- as.numeric(row["Diff_2022"])
+  val23 <- as.numeric(row["Diff_2023"])
+  out <- row["Outcome"]
+  vals_2022 <- abs(c(val22,
+                     MSPEs_PRes_2022_intime %>% dplyr::filter(Outcome==out) %>%
+                       pull(Diff_2022)))
+  vals_2023 <- abs(c(val23,
+                     MSPEs_PRes_2022_intime %>% dplyr::filter(Outcome==out) %>%
+                       pull(Diff_2023)))
+  return(c(P_2022=mean(vals_2022 >= abs(val22)),
+           P_2023=mean(vals_2023 >= abs(val23))))
+}
+Tbl4_intime <- Tbl4_itprep %>% 
+  bind_cols(as_tibble(t(apply(Tbl4_itprep, 1, Get_P)))) %>%
+  arrange(desc(Shift_Perc_2022),Name_Disp)
+Tbl4_2022_intime <- Tbl4_intime %>% 
+  dplyr::rename(Player=Name_Disp,
+                `Shift Rate (2022)`=Shift_Perc_2022,
+                p=P_2022,
+                Est_2022=Diff_2022) %>%
+  pivot_wider(id_cols=c("Player","Shift Rate (2022)","Donors"),
+              names_from="Outcome",
+              values_from=c("Est_2022","p")) %>%
+  dplyr::select(c("Player","Shift Rate (2022)","Donors",ends_with("OBP"),ends_with("OPS"),ends_with("wOBA")))
+write.csv(x=Tbl4_2022_intime %>%
+            dplyr::mutate(across(.cols=c(starts_with("Est_"),starts_with("p_")),
+                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))) %>%
+            dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(`Shift Rate (2022)`, digits=1), digits=1, nsmall=1),"%")),
+          file=paste0(MSoutdir,"Table4-2022-intime.csv"),
+          row.names=FALSE)
+Tbl4_2023_intime <- Tbl4_intime %>% 
+  dplyr::rename(Player=Name_Disp,
+                `Shift Rate (2022)`=Shift_Perc_2022,
+                p=P_2023,
+                Est_2023=Diff_2023) %>%
+  pivot_wider(id_cols=c("Player","Shift Rate (2022)","Donors"),
+              names_from="Outcome",
+              values_from=c("Est_2023","p")) %>%
+  dplyr::select(c("Player","Shift Rate (2022)","Donors",ends_with("OBP"),ends_with("OPS"),ends_with("wOBA")))
+write.csv(x=Tbl4_2023_intime %>%
+            dplyr::mutate(across(.cols=c(starts_with("Est_"),starts_with("p_")),
+                                 .fns=~format(round(.x, digits=3), digits=3, nsmall=3))) %>%
+            dplyr::mutate(`Shift Rate (2022)`=paste0(format(round(`Shift Rate (2022)`, digits=1), digits=1, nsmall=1),"%")),
+          file=paste0(MSoutdir,"Table4-2023-intime.csv"),
+          row.names=FALSE)
+
+
 ### Manuscript Figure for Appx:
-for (type in c(types,"2023_low","2023_high","2023_restrict")) {
+for (type in c(types,"2023_restrict","2023_PA325","2023_PA400")) {
   ggsave(filename=paste0(MSoutdir,"FigureA-",gsub("_","-",type),".png"),
          plot=plot_SC_ests_all("OBP", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="A. ") + 
            plot_SC_ests_all("OPS", get(x=paste0("SCs_Results_",type)), LW=0.8, tagval="B. ") + 
@@ -212,6 +262,117 @@ ggsave(filename=paste0(MSoutdir,"FigureA-2022-intime.png"),
                            LW=0.8, tagval="C. ") + 
           geom_vline(xintercept=2021.5, color="grey50", linetype="dotted") +
             coord_cartesian(xlim=c(2015,2022))) +
+         guide_area() +
+         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+         theme(legend.position="inside",
+               legend.background=element_rect(fill="white", color="grey50"),
+               legend.text=element_text(size=rel(1.2)),
+               legend.title=element_text(size=rel(1.2)),
+               legend.direction="vertical"),
+       dpi=600, width=12, height=8.1, units="in")
+ggsave(filename=paste0(MSoutdir,"FigureA-2023-intime.png"),
+       plot=(plot_SC_ests_all(statval="OBP", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2023),
+                              LW=0.8, tagval="A. ") + 
+               geom_vline(xintercept=c(2021.5,2022.5), color="grey50", linetype="dotted") +
+               coord_cartesian(xlim=c(2015,2023))) +
+         (plot_SC_ests_all(statval="OPS", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2023), 
+                           LW=0.8, tagval="B. ") + 
+            geom_vline(xintercept=c(2021.5,2022.5), color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2023))) +
+         (plot_SC_ests_all(statval="wOBA", SC.dat=SCs_Results_2022_intime %>% dplyr::filter(Season <= 2023),
+                           LW=0.8, tagval="C. ") + 
+            geom_vline(xintercept=c(2021.5,2022.5), color="grey50", linetype="dotted") +
+            coord_cartesian(xlim=c(2015,2023))) +
+         guide_area() +
+         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+         theme(legend.position="inside",
+               legend.background=element_rect(fill="white", color="grey50"),
+               legend.text=element_text(size=rel(1.2)),
+               legend.title=element_text(size=rel(1.2)),
+               legend.direction="vertical"),
+       dpi=600, width=12, height=8.1, units="in")
+ggsave(filename=paste0(MSoutdir,"FigureA-2023-low.png"),
+       plot=(plot_SC_ests(statval="OBP", SC.dat=SCs_Results_2023_low,
+                          LegName="Analysis Type",
+                          LegVar="Placebo_Unit",
+                          LegLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
+                                    "Placebo Players (2022 Shift Rate \U2264 10%)"), 
+                          LegBreaks=c(FALSE,TRUE),
+                          LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                          LegAlpha=c(1,0.5), 
+                          LegLTY=c("solid","longdash"), 
+                          title=paste0("SCM estimates for OBP for all included players"),
+                          LW=0.8, tagval="A. ") + 
+               coord_cartesian(xlim=c(2015,2023))) +
+         (plot_SC_ests(statval="OPS", SC.dat=SCs_Results_2023_low, 
+                       LegName="Analysis Type",
+                       LegVar="Placebo_Unit",
+                       LegLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
+                                 "Placebo Players (2022 Shift Rate \U2264 10%)"), 
+                       LegBreaks=c(FALSE,TRUE),
+                       LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                       LegAlpha=c(1,0.5), 
+                       LegLTY=c("solid","longdash"), 
+                       title=paste0("SCM estimates for OPS for all included players"),
+                       LW=0.8, tagval="B. ") + 
+            coord_cartesian(xlim=c(2015,2023))) +
+         (plot_SC_ests(statval="wOBA", SC.dat=SCs_Results_2023_low,
+                       LegName="Analysis Type",
+                       LegVar="Placebo_Unit",
+                       LegLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
+                                 "Placebo Players (2022 Shift Rate \U2264 10%)"), 
+                       LegBreaks=c(FALSE,TRUE),
+                       LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                       LegAlpha=c(1,0.5), 
+                       LegLTY=c("solid","longdash"), 
+                       title=paste0("SCM estimates for wOBA for all included players"),
+                       LW=0.8, tagval="C. ") + 
+            coord_cartesian(xlim=c(2015,2023))) +
+         guide_area() +
+         plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
+         theme(legend.position="inside",
+               legend.background=element_rect(fill="white", color="grey50"),
+               legend.text=element_text(size=rel(1.2)),
+               legend.title=element_text(size=rel(1.2)),
+               legend.direction="vertical"),
+       dpi=600, width=12, height=8.1, units="in")
+ggsave(filename=paste0(MSoutdir,"FigureA-2023-high.png"),
+       plot=(plot_SC_ests(statval="OBP", SC.dat=SCs_Results_2023_low,
+                          LegName="Analysis Type",
+                          LegVar="Placebo_Unit",
+                          LegLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
+                                    "Placebo Players (2022 Shift Rate \U2264 25%)"), 
+                          LegBreaks=c(FALSE,TRUE),
+                          LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                          LegAlpha=c(1,0.5), 
+                          LegLTY=c("solid","longdash"), 
+                          title=paste0("SCM estimates for OBP for all included players"),
+                          LW=0.8, tagval="A. ") + 
+               coord_cartesian(xlim=c(2015,2023))) +
+         (plot_SC_ests(statval="OPS", SC.dat=SCs_Results_2023_high, 
+                       LegName="Analysis Type",
+                       LegVar="Placebo_Unit",
+                       LegLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
+                                 "Placebo Players (2022 Shift Rate \U2264 25%)"), 
+                       LegBreaks=c(FALSE,TRUE),
+                       LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                       LegAlpha=c(1,0.5), 
+                       LegLTY=c("solid","longdash"), 
+                       title=paste0("SCM estimates for OPS for all included players"),
+                       LW=0.8, tagval="B. ") + 
+            coord_cartesian(xlim=c(2015,2023))) +
+         (plot_SC_ests(statval="wOBA", SC.dat=SCs_Results_2023_high,
+                       LegName="Analysis Type",
+                       LegVar="Placebo_Unit",
+                       LegLabs=c("Target Players (2022 Shift Rate \U2265 75%)",
+                                 "Placebo Players (2022 Shift Rate \U2264 25%)"), 
+                       LegBreaks=c(FALSE,TRUE),
+                       LegCols=brewer.pal(3, "Dark2")[c(3,1)], 
+                       LegAlpha=c(1,0.5), 
+                       LegLTY=c("solid","longdash"), 
+                       title=paste0("SCM estimates for wOBA for all included players"),
+                       LW=0.8, tagval="C. ") + 
+            coord_cartesian(xlim=c(2015,2023))) +
          guide_area() +
          plot_layout(nrow=2, ncol=2, byrow=TRUE, guides="collect") &
          theme(legend.position="inside",
@@ -374,7 +535,7 @@ for (type in types) {
 }
 
 ### Manuscript Figure 4:
-for (type in c(types,"2023_low","2023_high","2023_restrict")) {
+for (type in c(types,"2023_low","2023_high","2023_restrict","2023_PA325","2023_PA400")) {
   ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
          plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
                             LW=0.8, Placebo_Inc=FALSE, tagval="A. ") + 
@@ -385,6 +546,15 @@ for (type in c(types,"2023_low","2023_high","2023_restrict")) {
            plot_layout(nrow=2, ncol=2, byrow=TRUE),
          dpi=600, width=12, height=8.1, units="in")
 }
+ggsave(filename=paste0(MSoutdir,"Figure4-2023-intime.png"),
+       plot=plot_SC_Shift("OBP", SCs_Results_2022_intime %>% dplyr::filter(Season==2023),
+                          LW=0.8, Placebo_Inc=FALSE, tagval="A. ") + 
+         plot_SC_Shift("OPS", SCs_Results_2022_intime %>% dplyr::filter(Season==2023),
+                       LW=0.8, Placebo_Inc=FALSE, tagval="B. ") + 
+         plot_SC_Shift("wOBA", SCs_Results_2022_intime %>% dplyr::filter(Season==2023),
+                       LW=0.8, Placebo_Inc=FALSE, tagval="C. ") + 
+         plot_layout(nrow=2, ncol=2, byrow=TRUE),
+       dpi=600, width=12, height=8.1, units="in")
 for (type in paste(types,"full",sep="_")) {
   ggsave(filename=paste0(MSoutdir,"Figure4-",gsub("_","-",type),".png"),
          plot=plot_SC_Shift("OBP", get(x=paste0("SCs_Results_",type)),
@@ -397,6 +567,7 @@ for (type in paste(types,"full",sep="_")) {
          dpi=600, width=12, height=8.1, units="in")
 }
 
+### Summary Result Tables:
 Outcomes <- c("OBP","OPS","wOBA")
 SCs_Results_2022_intime_2022 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2022)
 SCs_Results_2022_intime_2023 <- SCs_Results_2022_intime %>% dplyr::filter(Season==2023)
